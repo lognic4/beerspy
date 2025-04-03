@@ -12,5 +12,27 @@
     <h1>BeerSpy 🍺</h1>
     <div id="map"></div>
     <script src="script.js"></script>
+    <form id="pub-form">
+        <label>Select an existing pub:</label>
+        <select id="pub-name">
+            <option value="">-- Select a pub --</option>
+        </select>
+    
+        <label>Or enter a new pub:</label>
+        <input type="text" id="new-pub-name" placeholder="New Pub Name">
+    
+        <label>Select location for new pub:</label>
+        <div id="map" style="height: 300px;"></div>
+    
+        <input type="hidden" id="latitude">
+        <input type="hidden" id="longitude">
+    
+        <input type="text" id="beer-name" placeholder="Beer Name" required>
+        <input type="text" id="size" placeholder="Size (ml)" required>
+        <input type="number" id="beer-price" placeholder="Price ($)" step="0.01" required>
+    
+        <button type="submit">Submit</button>
+    </form>
+    
 </body>
 </html>
