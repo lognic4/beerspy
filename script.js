@@ -107,8 +107,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
     
-        console.log("Fetched pubs:", await response.json());  // Add this line to see the fetched pubs
-        return response.json();
+        const pubs = await response.json(); // Read the response body once and store it
+        console.log("Fetched pubs:", pubs);  // Log the pubs
+    
+        return pubs; // Return the pubs object
     }
     
 });
