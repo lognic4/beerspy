@@ -99,4 +99,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     pubs.forEach(pub => {
         L.marker([pub.lat, pub.lon]).addTo(map).bindPopup(`<strong>${pub.pub_name}</strong><br>${pub.location}`);
     });
+    async function fetchPubs() {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/beer_prices`, {
+            headers: {
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+            }
+        });
+    
+        console.log("Fetched pubs:", await response.json());  // Add this line to see the fetched pubs
+        return response.json();
+    }
+    
 });
