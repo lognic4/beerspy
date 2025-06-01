@@ -47,6 +47,106 @@ document.addEventListener("DOMContentLoaded", async () => {
         option.dataset.lon = pub.lon;
         pubSelect.appendChild(option);
     });
+    
+    let markers = [];
+    
+    async function refreshMarkers(view = "min") {
+      // 1) Clear old markers
+      markers.forEach(m => m.remove());
+      markers = [];
+    
+      // 2) Determine SQL aggregate
+      let agg, alias;
+      if (view === "min")    { agg = "MIN(price)"; alias = "cheapest_price"; }
+      if (view === "avg")    { agg = "AVG(price)"; alias = "avg_price"; }
+      if (view === "max")    { agg = "MAX(price)"; alias = "expensive_price"; }
+    
+      // 3) Fetch from Supabase
+      const { data: pubsData, error } = await supabase
+        .from("beer_prices")
+        .select(`pub_name,lat,lon,${agg} as ${alias}`)
+        .group("pub_name,lat,lon");
+    
+      if (error) {
+        return console.error("Could not load pubs:", error);
+      }
+    
+      // 4) Plot each marker with a tooltip showing the chosen metric
+      pubsData.forEach(pub => {
+        const priceVal = pub[alias];
+        const m = L.marker([pub.lat, pub.lon]).addTo(mainMap);
+        m.bindTooltip(`\$${priceVal.toFixed(2)}`, { permanent: true, direction: 'top' });
+        m.on("click", () => showPubDetails(pub.pub_name));
+        markers.push(m);
+      });
+    }
+    
+    async function showPubDetails(pubName) {
+      const { data: beers } = await supabase
+        .from("beer_prices")
+        .select("beer_name,size,price,location,last_updated")
+        .eq("pub_name", pubName);
+    
+      if (!beers || beers.length === 0) return;
+    
+      let html = `<div style="min-width:200px"><strong>${pubName}</strong><br>`;
+      html += `<em>${beers[0].location || ""}</em><br><hr>`;
+      html += `<table style="width:100%; font-size:0.9rem">
+        <thead>
+          <tr><th>Beer</th><th>Size</th><th>Price</th></tr>
+        </thead>
+        <tbody>`;
+    
+      beers.forEach(b => {
+        html += `<tr>
+          <td>${b.beer_name}</td>
+          <td>${b.size}</td>
+          <td>\$${b.price.toFixed(2)}</td>
+        </tr>`;
+      });
+      html += `</tbody></table><br>`;
+      html += `<small>Last updated: ${new Date(
+        beers[0].last_updated
+      ).toLocaleDateString()}</small></div>`;
+    
+      // Find the existing marker for pubName, then open its popup
+      const marker = markers.find(m => {
+        const { lat, lng } = m.getLatLng();
+        return lat === beers[0].lat && lng === beers[0].lon;
+      });
+      if (marker) {
+        marker.bindPopup(html).openPopup();
+      }
+    }
+    
+    // On page load:
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 1) Initialize mainMap (as before)
+      window.mainMap = L.map("map").setView([-37.8136, 144.9631], 12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(mainMap);
+    
+      // 2) Initialize Supabase client
+      window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+      // 3) Fetch & plot initial markers (cheapest by default)
+      await refreshMarkers("min");
+    
+      // 4) Wire up the view‐select dropdown
+      document.getElementById("view‐select").addEventListener("change", (e) => {
+        refreshMarkers(e.target.value);
+      });
+    
+      // 5) Show or hide the “add‐form” when the +Add button is clicked
+      document.getElementById("add‐btn").addEventListener("click", () => {
+        document.getElementById("add‐form").style.display = "block";
+      });
+      
+      // 6) Handle add‐form submission (as shown earlier)
+      //    …call submitBeer(...) then do refreshMarkers("min") again…
+    });
+
 
     // Handle pub selection
     pubSelect.addEventListener("change", function() {

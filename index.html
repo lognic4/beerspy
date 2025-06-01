@@ -1,38 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BeerSpy Map</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BeerSpy Map</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
+
+  <style>
+    /* Make the map fill the viewport (adjust as you like) */
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+
+    /* Style for the view‐select dropdown */
+    #view-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 0.5rem;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      font-family: sans-serif;
+    }
+    #view-container label {
+      margin-right: 0.5rem;
+    }
+    #view-container select {
+      font-size: 1rem;
+    }
+
+    /* Temporary styling for marker tooltips */
+    .cheap-label {
+      background: rgba(255,255,255,0.8);
+      border-radius: 2px;
+      padding: 2px 4px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
-    <h1>BeerSpy 🍺</h1>
-    <div id="map"></div>
-    <script src="script.js"></script>
-    <form id="pub-form">
-        <label>Select an existing pub:</label>
-        <select id="pub-name">
-            <option value="">-- Select a pub --</option>
-        </select>
-    
-        <label>Or enter a new pub:</label>
-        <input type="text" id="new-pub-name" placeholder="New Pub Name">
-    
-        <label>Select location for new pub:</label>
-        <div id="map" style="height: 300px;"></div>
-    
-        <input type="hidden" id="latitude">
-        <input type="hidden" id="longitude">
-    
-        <input type="text" id="beer-name" placeholder="Beer Name" required>
-        <input type="text" id="size" placeholder="Size (ml)" required>
-        <input type="number" id="beer-price" placeholder="Price ($)" step="0.01" required>
-    
-        <button type="submit">Submit</button>
-    </form>
-    
+  <!-- 1) A small container for the “view” dropdown -->
+  <div id="view-container">
+    <label for="view-select">Show by:</label>
+    <select id="view-select">
+      <option value="min">Cheapest</option>
+      <option value="avg">Average</option>
+      <option value="max">Expensive</option>
+    </select>
+  </div>
+
+  <!-- 2) The single map container -->
+  <div id="map"></div>
+
+
+  <!-- 3) Load Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- 4) Load Supabase UMD bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+  <!--    After this, `supabase.createClient` is available.  -->
+
+  <!-- 5) Our main application script -->
+  <script>
+    (async () => {
+      // ───────────────────────────────────────────
+      // A) CONFIGURE Supabase client (UMD style)
+      // ───────────────────────────────────────────
+      const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; 
+      // ─── Replace the above with your real anon key ───
+
+      // Create a global supabase object
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // ───────────────────────────────────────────
+      // B) INITIALIZE the Leaflet map (only one #map)
+      // ───────────────────────────────────────────
+      const mainMap = L.map("map").setView([-37.8136, 144.9631], 12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(mainMap);
+
+      // A place to keep track of all current Leaflet markers
+      let markers = [];
+
+      // ───────────────────────────────────────────
+      // C) FUNCTION: Refresh markers according to “view” (min/avg/max)
+      // ───────────────────────────────────────────
+      async function refreshMarkers(view = "min") {
+        // 1) Remove existing markers
+        markers.forEach(m => m.remove());
+        markers = [];
+
+        // 2) Pick the right aggregate and alias
+        let agg, alias;
+        if (view === "min")    { agg = "MIN(price)"; alias = "cheapest_price"; }
+        if (view === "avg")    { agg = "AVG(price)"; alias = "avg_price"; }
+        if (view === "max")    { agg = "MAX(price)"; alias = "expensive_price"; }
+
+        // 3) Query Supabase (grouped by pub_name, lat, lon)
+        const { data: pubsData, error } = await supabase
+          .from("beer_prices")
+          .select(`pub_name, lat, lon, ${agg} as ${alias}`)
+          .group("pub_name, lat, lon");
+
+        if (error) {
+          console.error("Could not load pubs:", error);
+          return;
+        }
+
+        // 4) For each pub, add a marker with a permanent tooltip
+        pubsData.forEach(pub => {
+          const priceVal = pub[alias];
+          const m = L.marker([pub.lat, pub.lon]).addTo(mainMap);
+
+          // Show the price as a permanent tooltip hovering above the pin
+          m.bindTooltip(
+            `$${priceVal.toFixed(2)}`,
+            {
+              permanent: true,
+              direction: "top",
+              className: "cheap-label"
+            }
+          );
+
+          // On click, fetch & show full details for that pub
+          m.on("click", () => showPubDetails(pub.pub_name, pub.lat, pub.lon));
+          markers.push(m);
+        });
+      }
+
+      // ───────────────────────────────────────────
+      // D) FUNCTION: On marker click, show a popup with ALL beer‐entries for that pub
+      // ───────────────────────────────────────────
+      async function showPubDetails(pubName, lat, lon) {
+        // 1) Fetch every row for this pub_name
+        const { data: beers, error } = await supabase
+          .from("beer_prices")
+          .select("beer_name, size, price, location, last_updated")
+          .eq("pub_name", pubName);
+
+        if (error || !beers || beers.length === 0) {
+          console.error("Failed to load details for", pubName, error);
+          return;
+        }
+
+        // 2) Build HTML for the popup
+        let html = `<div style="min-width:180px; font-family:sans-serif">
+          <strong>${pubName}</strong><br>`;
+        // Show location (assuming it’s the same for all rows)
+        html += `<em>${beers[0].location || ""}</em><br><hr>`;
+
+        html += `<table style="width:100%; font-size:0.9rem; border-collapse:collapse">
+            <thead>
+              <tr>
+                <th style="text-align:left">Beer</th>
+                <th style="text-align:left">Size</th>
+                <th style="text-align:right">Price</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+        beers.forEach(b => {
+          html += `<tr>
+            <td>${b.beer_name}</td>
+            <td>${b.size}</td>
+            <td style="text-align:right">$${b.price.toFixed(2)}</td>
+          </tr>`;
+        });
+
+        html += `</tbody></table><br>`;
+        html += `<small>Last updated: ${new Date(
+          beers[0].last_updated
+        ).toLocaleDateString()}</small></div>`;
+
+        // 3) Create or reuse a popup at the same coordinates
+        L.popup({ maxWidth: 240 })
+          .setLatLng([lat, lon])
+          .setContent(html)
+          .openOn(mainMap);
+      }
+
+      // ───────────────────────────────────────────
+      // E) ON INITIAL LOAD: draw the “cheapest” view by default
+      // ───────────────────────────────────────────
+      await refreshMarkers("min");
+
+      // ───────────────────────────────────────────
+      // F) HOOK UP the “view” dropdown to re‐draw markers
+      // ───────────────────────────────────────────
+      const viewSelect = document.getElementById("view-select");
+      viewSelect.addEventListener("change", () => {
+        refreshMarkers(viewSelect.value);
+      });
+    })();
+  </script>
 </body>
 </html>
