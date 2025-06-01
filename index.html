@@ -61,102 +61,150 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   
   <!-- Supabase client -->
-  <script type="module">
-    // REPLACE THESE WITH YOUR ACTUAL SUPABASE DETAILS
+<script type="module">
+  document.addEventListener("DOMContentLoaded", async () => {
+    // ──── A) SUPABASE CONFIGURATION ───────────────────────────────────
     const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      // Initialize map
-      const map = L.map("map").setView([-37.8136, 144.9631], 12);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors"
-      }).addTo(map);
+    // Initialize Supabase client
+    const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log("Supabase client initialized");
 
-      let markers = [];
+    // ──── B) LEAFLET MAP SETUP ────────────────────────────────────────
+    const mainMap = L.map("map").setView([-37.8136, 144.9631], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(mainMap);
+    console.log("Map initialized");
 
-      // Fetch data from Supabase
-      async function getBeerData(viewType) {
-        const { data, error } = await fetch(`${SUPABASE_URL}/rest/v1/beer_prices?select=*`, {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`
-          }
-        }).then(res => res.json());
+    let markers = [];
+
+    // ──── C) REFRESH MARKERS FUNCTION ────────────────────────────────
+    async function refreshMarkers(view = "min") {
+      console.log(`Refreshing markers for view: ${view}`);
+      
+      // Clear existing markers
+      markers.forEach(m => m.remove());
+      markers = [];
+      console.log("Cleared existing markers");
+
+      // Determine aggregation type
+      let agg, alias;
+      if (view === "min") {
+        agg = "MIN(price)";
+        alias = "cheapest_price";
+      } else if (view === "avg") {
+        agg = "AVG(price)";
+        alias = "avg_price";
+      } else if (view === "max") {
+        agg = "MAX(price)";
+        alias = "expensive_price";
+      }
+
+      try {
+        // Fetch data from Supabase
+        const { data: pubsData, error } = await sbClient
+          .from("beer_prices")
+          .select(`pub_name, lat, lon, ${agg} as ${alias}`)
+          .group("pub_name, lat, lon");
 
         if (error) {
           console.error("Supabase error:", error);
-          return [];
+          alert("Error loading data. Check console for details.");
+          return;
         }
-        return data;
-      }
 
-      // Process data and show markers
-      async function refreshMarkers(view = "min") {
-        // Clear existing markers
-        markers.forEach(marker => map.removeLayer(marker));
-        markers = [];
+        console.log(`Received ${pubsData.length} pubs from Supabase`);
 
-        const beerData = await getBeerData(view);
-        if (!beerData) return;
-
-        // Group data by pub
-        const pubs = {};
-        beerData.forEach(item => {
-          const key = `${item.pub_name}-${item.lat}-${item.lon}`;
-          if (!pubs[key]) {
-            pubs[key] = {
-              name: item.pub_name,
-              lat: item.lat,
-              lon: item.lon,
-              prices: []
-            };
-          }
-          pubs[key].prices.push(item.price);
-        });
-
-        // Calculate price metrics
-        Object.values(pubs).forEach(pub => {
-          pub.min = Math.min(...pub.prices);
-          pub.avg = pub.prices.reduce((a, b) => a + b, 0) / pub.prices.length;
-          pub.max = Math.max(...pub.prices);
-        });
-
-        // Add markers to map
-        Object.values(pubs).forEach(pub => {
-          const price = pub[view];
-          const marker = L.marker([pub.lat, pub.lon]).addTo(map);
+        // Add new markers
+        pubsData.forEach(pub => {
+          const priceVal = pub[alias];
+          const m = L.marker([pub.lat, pub.lon]).addTo(mainMap);
           
-          marker.bindTooltip(`$${price.toFixed(2)}`, {
+          m.bindTooltip(`$${priceVal.toFixed(2)}`, {
             permanent: true,
+            direction: "top",
             className: "cheap-label"
           });
 
-          marker.on("click", () => {
-            // Show pub details popup
-            const content = `
-              <div style="max-width: 300px">
-                <h3>${pub.name}</h3>
-                <p><b>Cheapest:</b> $${pub.min.toFixed(2)}</p>
-                <p><b>Average:</b> $${pub.avg.toFixed(2)}</p>
-                <p><b>Most Expensive:</b> $${pub.max.toFixed(2)}</p>
-              </div>
-            `;
-            marker.bindPopup(content).openPopup();
-          });
-
-          markers.push(marker);
+          m.on("click", () => showPubDetails(pub.pub_name, pub.lat, pub.lon));
+          markers.push(m);
         });
+
+        console.log(`Added ${markers.length} markers to map`);
+
+      } catch (err) {
+        console.error("Error in refreshMarkers:", err);
+        alert("Failed to load beer data");
       }
+    }
 
-      // Initial load
+    // ──── D) PUB DETAILS FUNCTION ────────────────────────────────────
+    async function showPubDetails(pubName, lat, lon) {
+      console.log(`Fetching details for: ${pubName}`);
+      
+      try {
+        const { data: beers, error } = await sbClient
+          .from("beer_prices")
+          .select("beer_name, size, price, location, last_updated")
+          .eq("pub_name", pubName);
+
+        if (error || !beers || beers.length === 0) {
+          console.error("Pub details error:", error);
+          alert(`No data found for ${pubName}`);
+          return;
+        }
+
+        console.log(`Found ${beers.length} beers for ${pubName}`);
+
+        // Build popup content
+        let html = `<div style="min-width:180px; font-family:sans-serif">
+          <strong>${pubName}</strong><br>
+          <em>${beers[0].location || "Location unknown"}</em><hr>
+          <table style="width:100%; font-size:0.9rem; border-collapse:collapse">
+            <thead><tr>
+              <th style="text-align:left">Beer</th>
+              <th style="text-align:left">Size</th>
+              <th style="text-align:right">Price</th>
+            </tr></thead>
+            <tbody>`;
+
+        beers.forEach(b => {
+          html += `<tr>
+            <td>${b.beer_name}</td>
+            <td>${b.size}</td>
+            <td style="text-align:right">$${b.price.toFixed(2)}</td>
+          </tr>`;
+        });
+
+        html += `</tbody></table><br>
+          <small>Last updated: ${new Date(beers[0].last_updated).toLocaleString()}</small>
+        </div>`;
+
+        // Show popup
+        L.popup({ maxWidth: 240 })
+          .setLatLng([lat, lon])
+          .setContent(html)
+          .openOn(mainMap);
+
+      } catch (err) {
+        console.error("Error showing pub details:", err);
+        alert("Failed to load pub details");
+      }
+    }
+
+    // ──── E) INITIAL LOAD AND EVENT LISTENERS ────────────────────────
+    try {
       await refreshMarkers("min");
+    } catch (err) {
+      console.error("Initial load error:", err);
+    }
 
-      // Dropdown change handler
-      document.getElementById("view-select").addEventListener("change", (e) => {
-        refreshMarkers(e.target.value);
-      });
+    document.getElementById("view-select").addEventListener("change", (e) => {
+      refreshMarkers(e.target.value);
     });
-  </script>
+  });
+</script>
 </body>
 </html>
