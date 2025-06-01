@@ -6,10 +6,40 @@
   <title>BeerSpy Map</title>
 
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    /* Your existing CSS styles here */
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+
+    #view-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 0.5rem;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      font-family: sans-serif;
+    }
+    #view-container label {
+      margin-right: 0.5rem;
+    }
+    #view-container select {
+      font-size: 1rem;
+    }
+
+    .cheap-label {
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 2px;
+      padding: 2px 4px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -25,12 +55,13 @@
   <div id="map"></div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
-  <!-- Load Supabase UMD bundle first -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  
+  <!-- Using jsDelivr CDN for Supabase with fixed MIME type -->
   <script type="module">
+    // Import createClient from jsDelivr CDN
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
     document.addEventListener("DOMContentLoaded", async () => {
       console.log("DOM fully loaded");
       
@@ -38,8 +69,8 @@
       const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";
       const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
 
-      // Initialize Supabase client correctly
-      const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      // Initialize Supabase client
+      const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       console.log("Supabase client initialized", sbClient);
 
       // ──── B) LEAFLET MAP SETUP ────────────────────────────────────────
@@ -56,20 +87,22 @@
         console.log(`Refreshing markers for view: ${view}`);
         
         // Clear existing markers
-        markers.forEach(m => m.remove());
+        markers.forEach(m => {
+          if (m && m.remove) m.remove();
+        });
         markers = [];
         console.log("Cleared existing markers");
 
         // Determine aggregation type
         let agg, alias;
         if (view === "min") {
-          agg = "MIN(price)";
+          agg = "min(price)";
           alias = "cheapest_price";
         } else if (view === "avg") {
-          agg = "AVG(price)";
+          agg = "avg(price)";
           alias = "avg_price";
         } else if (view === "max") {
-          agg = "MAX(price)";
+          agg = "max(price)";
           alias = "expensive_price";
         }
 
@@ -82,18 +115,19 @@
 
           if (error) {
             console.error("Supabase error:", error);
-            alert("Error loading data. Check console for details.");
             return;
           }
 
-          console.log(`Received ${pubsData.length} pubs from Supabase`);
+          console.log(`Received ${pubsData?.length || 0} pubs from Supabase`);
 
           // Add new markers
-          pubsData.forEach(pub => {
+          pubsData?.forEach(pub => {
             const priceVal = pub[alias];
+            if (!pub.lat || !pub.lon) return;
+            
             const m = L.marker([pub.lat, pub.lon]).addTo(mainMap);
             
-            m.bindTooltip(`$${priceVal.toFixed(2)}`, {
+            m.bindTooltip(`$${priceVal?.toFixed(2) || '0.00'}`, {
               permanent: true,
               direction: "top",
               className: "cheap-label"
@@ -107,7 +141,6 @@
 
         } catch (err) {
           console.error("Error in refreshMarkers:", err);
-          alert("Failed to load beer data");
         }
       }
 
@@ -123,7 +156,6 @@
 
           if (error || !beers || beers.length === 0) {
             console.error("Pub details error:", error);
-            alert(`No data found for ${pubName}`);
             return;
           }
 
@@ -143,14 +175,16 @@
 
           beers.forEach(b => {
             html += `<tr>
-              <td>${b.beer_name}</td>
-              <td>${b.size}</td>
-              <td style="text-align:right">$${b.price.toFixed(2)}</td>
+              <td>${b.beer_name || 'Unknown'}</td>
+              <td>${b.size || '?'}</td>
+              <td style="text-align:right">$${(b.price || 0).toFixed(2)}</td>
             </tr>`;
           });
 
           html += `</tbody></table><br>
-            <small>Last updated: ${new Date(beers[0].last_updated).toLocaleString()}</small>
+            <small>Last updated: ${new Date(
+              beers[0]?.last_updated || Date.now()
+            ).toLocaleString()}</small>
           </div>`;
 
           // Show popup
@@ -161,7 +195,6 @@
 
         } catch (err) {
           console.error("Error showing pub details:", err);
-          alert("Failed to load pub details");
         }
       }
 
