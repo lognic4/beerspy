@@ -11,13 +11,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
 
 
-    async function fetchPubs() {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/beer_prices`, {
-            headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` }
-        });
-        return response.json();
-    }
-
     async function submitBeer(pubName, lat, lon, beerName, size, price) {
         const response = await fetch(`${SUPABASE_URL}/rest/v1/beer_prices`, {
             method: "POST",
@@ -32,7 +25,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 last_updated: new Date().toISOString()
             })
         });
-        return response.json();
+        if (!response.ok) {
+            const text = await response.text();
+            console.error("submitBeer failed, status:", response.status, text);
+         return { error: text };
+      }
+      return response.json();
+
+
     }
 
     // Load existing pubs into dropdown
@@ -100,17 +100,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         L.marker([pub.lat, pub.lon]).addTo(map).bindPopup(`<strong>${pub.pub_name}</strong><br>${pub.location}`);
     });
     async function fetchPubs() {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/beer_prices`, {
-            headers: {
-                "apikey": SUPABASE_ANON_KEY,
-                "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-            }
-        });
-    
-        const pubs = await response.json(); // Read the response body once and store it
-        console.log("Fetched pubs:", pubs);  // Log the pubs
-    
-        return pubs; // Return the pubs object
+      const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/beer_prices?select=*`,
+    {
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      },
     }
+  );
+  if (!response.ok) {
+    console.error("fetchPubs failed, status:", response.status, await response.text());
+    return []; // or throw new Error("fetchPubs failed");
+  }
+  const pubs = await response.json();
+  console.log("Fetched pubs:", pubs);
+  return pubs;
+}
+
     
 });
