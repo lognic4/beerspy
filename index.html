@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeerSpy Melbourne - Live Beer Prices Map</title>
@@ -719,10 +721,40 @@
         // =====================================
         
         const pubs = [];
-        
+          const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";
+
+          // ==== PASTE YOUR ACTUAL ANON KEY HERE (no ellipsis) ====
+          const SUPABASE_ANON_KEY =
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+            + ".eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0"
+            + ".eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
+        const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
         document.addEventListener("DOMContentLoaded", function() {
             console.log("BeerSpy app initialized");
             
+            async function fetchBeerPrices() {
+                const { data, error } = await sbClient
+                    .from("beer_prices")
+                    .select("pub_name, beer_name, size, price, last_updated");
+            
+                if (error) {
+                    console.error("Error fetching beer prices:", error);
+                    return;
+                }
+            
+                // Process and render the fetched data
+                renderBeerPrices(data);
+            }
+            function renderBeerPrices(beers) {
+                // Logic to display beers in your UI
+                beers.forEach(beer => {
+                    console.log(`Pub: ${beer.pub_name}, Beer: ${beer.beer_name}, Price: $${beer.price}`);
+                    // Add rendering logic here as needed (e.g., update a table or markers)
+                });
+            }
+
+                        
             // Create map with Melbourne coordinates
             const map = L.map('map').setView([-37.8136, 144.9631], 13);
             
@@ -981,10 +1013,36 @@
                         { name: beerName, size: beerSize, price: beerPrice }
                     ]
                 };
+                                
+                try {
+                  const { data, error } = await sbClient.from('beer_prices').insert([
+                    {
+                      pub_name: name,
+                      location: address,
+                      lat: parseFloat(lat),
+                      lon: parseFloat(lon),
+                      beer_name: beerName,
+                      size: beerSize,
+                      price: beerPrice,
+                      last_updated: new Date().toISOString()
+                    }
+                  ]);
                 
-                // Add to data
-                pubs.push(newPub);
-                renderPubs();
+                  if (error) {
+                    console.error('Error inserting data:', error);
+                    alert('There was an error saving to the database.');
+                    return;
+                  }
+                
+                  // Fetch updated data and re-render
+                  await fetchBeerPrices();
+                  modal.style.display = 'none';
+                  resetForm();
+                } catch (err) {
+                  console.error('Unexpected error:', err);
+                  alert('Unexpected error occurred.');
+                }
+
                 
                 // Close modal and reset form
                 modal.style.display = 'none';
