@@ -537,6 +537,65 @@
             border-radius: 4px;
             margin: 10px 0;
         }
+
+        
+        /* Custom marker arrow */
+        .marker-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            border-left: 8px solid var(--accent-light);
+        }
+
+        /* Price bubble */
+        .price-bubble {
+            position: absolute;
+            background: var(--accent);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* Overlay to capture clicks */
+        #map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            cursor: default;
+        }
+
+        /* Disabled button style */
+        .disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Statistics header */
+        #stats-header {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    
     </style>
 </head>
 <body>
@@ -764,6 +823,12 @@
           // Current beer size filter
           let currentSize = "pint";
           let markers = [];
+
+          updateStatistics();
+
+          setupEventListeners();
+
+          fetchBeerPrices();
           
           // =====================================
           // MAP MARKER PLACEMENT
@@ -801,35 +866,17 @@
           }
           
           // Renders pubs on the map
-          function renderPubs() {
-              // Clear previous markers
-              markers.forEach(marker => map.removeLayer(marker));
-              markers = [];
-              
-              pubs.forEach(pub => {
-                  // Filter beers to current size and find min price
-                  const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
-                  
-                  if (beersForSize.length === 0) return;
-                  
-                  const minPrice = Math.min(...beersForSize.map(beer => beer.price));
-                  
-                  // Create custom marker
-                  const marker = L.marker([pub.lat, pub.lon], {
-                      icon: createCustomIcon(minPrice)
-                  }).addTo(map);
-                  
-                  // Attach pub data to marker
-                  marker.pubData = pub;
-                  
-                  // Add click handler
-                  marker.on('click', onMarkerClick);
-                  
-                  markers.push(marker);
-              });
-              
-              // Update statistics
-              updateStatistics();
+          function createCustomIcon(price) {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `
+                    <div class="price-bubble">$${price.toFixed(2)}</div>
+                    <div class="marker-arrow"></div>
+
+                `,
+                iconSize: [60,60],
+                iconAnchor: [30,60]
+            });
           }
           
           // Reset the form
@@ -1041,43 +1088,124 @@
           // EVENT HANDLERS
           // =====================================
           // Handles when a marker is clicked
-          function onMarkerClick(e) {
-              const pub = e.target.pubData;
-              
-              // Filter beers for current size
-              const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
-              
-              // Create popup content
-              let popupContent = `<div class="pub-popup">
-                  <h3>${pub.name}</h3>
-                  <div class="address">${pub.address}</div>
-                  <table class="beer-table">
-                      <tr>
-                          <th>Beer</th>
-                          <th>Size</th>
-                          <th>Price</th>
-                      </tr>`;
-              
-              beersForSize.forEach(beer => {
-                  popupContent += `
-                      <tr>
-                          <td>${beer.name}</td>
-                          <td>${beer.size}</td>
-                          <td class="beer-price">$${beer.price.toFixed(2)}</td>
-                      </tr>
-                  `;
-              });
-              
-              popupContent += `</table>
-                  <div class="last-updated">Updated: Today</div>
-                  <div class="popup-actions">
-                      <button class="add-beer-btn">Add New Beer</button>
-                  </div>
-              </div>`;
-              
-              // Open popup
-              e.target.bindPopup(popupContent, { minWidth: 280 }).openPopup();
-          }
+          function updateStatistics() {
+            const totalPubs = pubs.length;
+            const totalBeers = pubs.reduce((total, pub) => total + pub.beers.length, 0);
+            
+            const prices = [];
+            pubs.forEach(pub => {
+                const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
+                beersForSize.forEach(beer => prices.push(beer.price));
+            });
+            
+            const avgPriceValue = prices.length > 0 
+                ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
+                : "N/A";
+                
+            // Update stats display
+            document.getElementById('pubs-count').textContent = totalPubs;
+            document.getElementById('beers-count').textContent = totalBeers;
+            document.getElementById('avg-price').textContent = `$${avgPriceValue}`;
+        }
+
+        // Function to setup event listeners
+        function setupEventListeners() {
+            // Size filter buttons
+            document.querySelectorAll('.size-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    currentSize = this.dataset.size;
+                    
+                    // Re-render markers if pubs data is available
+                    if (pubs.length > 0) {
+                        renderPubs();
+                    }
+                });
+            });
+
+            // Map click overlay to allow toggling markers
+            document.getElementById('map-overlay').addEventListener('click', function() {
+                // Close all marker popups
+                markers.forEach(marker => {
+                    if (marker && marker.getPopup && marker.getPopup().isOpen()) {
+                        marker.getPopup().close();
+                    }
+                });
+            });
+        }
+
+        // Function to render pubs on map
+        function renderPubs() {
+            // Clear previous markers
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            pubs.forEach(pub => {
+                const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
+                
+                if (beersForSize.length === 0) return;
+                
+                const minPrice = Math.min(...beersForSize.map(beer => beer.price));
+                const marker = L.marker([pub.lat, pub.lon], {
+                    icon: createCustomIcon(minPrice)
+                }).addTo(map);
+                
+                marker.pubData = pub;
+                marker.on('click', onMarkerClick);
+                markers.push(marker);
+            });
+        }
+
+        // Function to handle marker clicks
+        function onMarkerClick(e) {
+            const pub = e.target.pubData;
+            
+            // Filter beers for current size
+            const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
+            
+            // Open popup with delay to allow click to register
+            setTimeout(() => {
+                e.target.bindPopup(createPopupContent(pub, beersForSize)).openPopup();
+            }, 50);
+        }
+
+        // Function to create popup content
+        function createPopupContent(pub, beers) {
+            let content = `
+                <div class="pub-popup">
+                    <h3>${pub.name}</h3>
+                    <div class="address">${pub.address}</div>
+                    <table class="beer-table">
+                        <tr>
+                            <th>Beer</th>
+                            <th>Size</th>
+                            <th>Price</th>
+                        </tr>
+            `;
+            
+            beers.forEach(beer => {
+                content += `
+                    <tr>
+                        <td>${beer.name}</td>
+                        <td>${beer.size}</td>
+                        <td class="beer-price">$${beer.price.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            content += `
+                    </table>
+                    <div class="last-updated">Updated: ${new Date().toLocaleDateString()}</div>
+                    <div class="popup-actions">
+                        <button class="add-beer-btn">Add New Beer</button>
+                    </div>
+                </div>
+            `;
+            
+            return content;
+        }
           
           // Modal controls
           const modal = document.getElementById('add-pub-modal');
