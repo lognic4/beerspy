@@ -15,516 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* ======== Global Styles ======== */
-        :root {
-            --primary: #2c3e50;
-            --primary-light: #3c5975;
-            --secondary: #3498db;
-            --secondary-dark: #2980b9;
-            --accent: #e67e22;
-            --accent-dark: #d35400;
-            --warning: #e74c3c;
-            --light-gray: #f5f7f9;
-            --medium-gray: #ecf0f1;
-            --text-dark: #2c3e50;
-            --text-medium: #7f8c8d;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Open Sans', 'Helvetica', Arial, sans-serif;
-        }
-        
-        body {
-            background: #f5f7f9;
-            color: var(--text-dark);
-            min-height: 100vh;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* ======== Header Styles ======== */
-        header {
-            background: var(--primary);
-            color: white;
-            padding: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-        }
-        
-        header .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .logo .beer-icon {
-            font-size: 2.2rem;
-        }
-        
-        .logo h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-        
-        .logo p {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-top: 4px;
-        }
-        
-        /* ======== Main Layout ======== */
-        #main-container {
-            flex: 1;
-            display: flex;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-            padding: 20px;
-            gap: 20px;
-        }
-        
-        /* ======== Map Container ======== */
-        #map-container {
-            flex: 1;
-            position: relative;
-            height: calc(100vh - 160px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        #map {
-            height: 100%;
-            background: var(--light-gray);
-        }
-        
-        /* ======== Controls Section ======== */
-        #map-controls {
-            width: 300px;
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .control-section {
-            margin-bottom: 15px;
-        }
-        
-        .control-section h3 {
-            margin-bottom: 12px;
-            color: var(--primary);
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--medium-gray);
-        }
-        
-        /* Beer Size Filter */
-        .size-filter {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-        
-        .size-btn {
-            padding: 10px 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: white;
-            color: var(--text-dark);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        
-        .size-btn:hover, .size-btn.active {
-            background: var(--secondary);
-            color: white;
-            border-color: var(--secondary);
-        }
-        
-        /* Add Pub Button */
-        #add-pub-btn {
-            padding: 12px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        #add-pub-btn:hover {
-            background: var(--accent-dark);
-        }
-        
-        /* Search box */
-        .search-box {
-            margin-top: 15px;
-        }
-        
-        .search-box input {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        
-        /* Statistics display */
-        .stats-container {
-            display: flex;
-            gap: 15px;
-            text-align: center;
-            margin-top: 5px;
-        }
-        
-        .stat-card {
-            flex: 1;
-            background: var(--light-gray);
-            border-radius: 4px;
-            padding: 10px;
-        }
-        
-        .stat-card .value {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .stat-card .label {
-            font-size: 0.8rem;
-            color: var(--text-medium);
-        }
-        
-        /* ======== Search Bar ======== */
-        .search-container {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            z-index: 1000;
-            width: 300px;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .search-bar {
-            display: flex;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .search-bar input {
-            flex-grow: 1;
-            padding: 12px 15px;
-            border: none;
-            font-size: 1rem;
-        }
-        
-        .search-btn {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            width: 50px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .search-btn:hover {
-            background: var(--secondary-dark);
-        }
-        
-        .search-results {
-            position: absolute;
-            width: 100%;
-            max-height: 300px;
-            overflow-y: auto;
-            background: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            border-radius: 0 0 4px 4px;
-            margin-top: 1px;
-            display: none;
-        }
-        
-        .search-item {
-            padding: 10px 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-        }
-        
-        .search-item:hover {
-            background: #f1f5f9;
-        }
-        
-        /* ======== Marker Styles ======== */
-        .price-tooltip {
-            padding: 6px 10px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--warning);
-            text-align: center;
-            min-width: 60px;
-        }
-        
-        /* ======== Pub Info Popup ======== */
-        .pub-popup {
-            min-width: 240px;
-            max-width: 300px;
-        }
-        
-        .pub-popup h3 {
-            font-size: 1.2rem;
-            margin-bottom: 5px;
-            color: var(--primary);
-        }
-        
-        .pub-popup .address {
-            font-size: 0.9rem;
-            color: var(--text-medium);
-            margin-bottom: 15px;
-        }
-        
-        .beer-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-        }
-        
-        .beer-table th {
-            text-align: left;
-            padding: 8px;
-            background: var(--medium-gray);
-            border-bottom: 1px solid #ddd;
-            font-weight: 600;
-            color: var(--text-medium);
-        }
-        
-        .beer-table td {
-            padding: 8px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .beer-price {
-            text-align: right;
-            color: var(--warning);
-            font-weight: 600;
-        }
-        
-        .last-updated {
-            font-size: 0.8rem;
-            color: #95a5a6;
-            margin-bottom: 15px;
-        }
-        
-        .popup-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-        }
-        
-        .add-beer-btn {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-        
-        .add-beer-btn:hover {
-            background: var(--secondary-dark);
-        }
-        
-        /* ======== Modal Styles ======== */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 500px;
-            overflow: hidden;
-        }
-        
-        .modal-header {
-            background: var(--primary);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-header h2 {
-            font-size: 1.5rem;
-            margin: 0;
-        }
-        
-        .close-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            transition: background 0.2s;
-        }
-        
-        .close-btn:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .modal-body {
-            padding: 20px;
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: var(--primary);
-        }
-        
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-            transition: border 0.3s;
-        }
-        
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: var(--secondary);
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-        }
-        
-        .form-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .form-row .form-group {
-            flex: 1;
-            margin-bottom: 0;
-        }
-        
-        .modal-footer {
-            padding: 15px 20px;
-            background: var(--light-gray);
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-        
-        .modal-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-cancel {
-            background: white;
-            border: 1px solid #ddd;
-            color: var(--text-dark);
-        }
-        
-        .btn-cancel:hover {
-            background: #f5f5f5;
-        }
-        
-        .btn-submit {
-            background: var(--accent);
-            color: white;
-        }
-        
-        .btn-submit:hover {
-            background: var(--accent-dark);
-        }
-        
-        .search-geocode {
-            margin-top: 5px;
-            display: flex;
-        }
-        
-        .search-geocode .form-group {
-            flex: 1;
-            margin-right: 10px;
-        }
-        
-        .search-geocode button {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            padding: 0 15px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        /* Footer */
-        footer {
-            background: var(--primary);
-            color: white;
-            text-align: center;
-            padding: 15px;
-            margin-top: auto;
-        }
+        /* Add your existing CSS styles here */
+        /* ... */
     </style>
 </head>
 <body>
@@ -545,58 +37,31 @@
         <!-- Map Container -->
         <div id="map-container">
             <div id="map"></div>
-            
             <!-- Search Bar -->
             <div class="search-container">
                 <div class="search-bar">
                     <input type="text" id="pub-search" placeholder="Search pubs by name or address...">
                     <button class="search-btn"><i class="fas fa-search"></i></button>
                 </div>
-                <div class="search-results" id="search-results">
-                    <!-- Search results will appear here -->
-                </div>
+                <div class="search-results" id="search-results"></div>
             </div>
         </div>
         
         <!-- Map Controls Panel -->
         <div id="map-controls">
             <div class="control-section">
-                <h3>Beer Size</h3>
-                <div class="size-filter">
-                    <button class="size-btn active" data-size="pint">Pint (568ml)</button>
-                    <button class="size-btn" data-size="schooner">Schooner (425ml)</button>
-                    <button class="size-btn" data-size="pot">Pot (285ml)</button>
-                </div>
-            </div>
-            
-            <div class="control-section">
                 <h3>Add a New Pub</h3>
                 <button id="add-pub-btn">
                     <i class="fas fa-plus"></i> Enter Pub Details
                 </button>
             </div>
-            
             <div class="control-section">
-                <h3>Search</h3>
-                <div class="search-box">
-                    <input type="text" id="search-nearby" placeholder="Search nearby for pubs...">
-                </div>
+                <h3>Submit New Price</h3>
+                <button class="add-beer-btn">
+                    <i class="fas fa-plus"></i> Submit New Price
+                </button>
             </div>
-            
-            <div class="control-section stats-container">
-                <div class="stat-card">
-                    <div class="value" id="pubs-count">12</div>
-                    <div class="label">Pubs</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value" id="beers-count">58</div>
-                    <div class="label">Beers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value" id="avg-price">$12.80</div>
-                    <div class="label">Avg Price</div>
-                </div>
-            </div>
+            <!-- Add other controls here -->
         </div>
     </div>
     
@@ -608,62 +73,50 @@
                 <button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="pub-name">Pub Name *</label>
-                    <input type="text" id="pub-name" required placeholder="Enter pub name">
-                </div>
-                
-                <div class="form-group">
-                    <label for="pub-address">Address *</label>
-                    <div class="search-geocode">
-                        <div class="form-group">
-                            <input type="text" id="pub-address" required placeholder="Enter address">
-                        </div>
-                        <button id="find-location">
-                            <i class="fas fa-location-arrow"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="pub-lat">Latitude</label>
-                        <input type="text" id="pub-lat" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="pub-lon">Longitude</label>
-                        <input type="text" id="pub-lon" readonly>
-                    </div>
-                </div>
-                
-                <h3>Add Initial Beer</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="beer-name">Beer Name *</label>
-                        <input type="text" id="beer-name" required placeholder="Beer name">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="beer-size">Size *</label>
-                        <select id="beer-size" required>
-                            <option value="pint">Pint (568ml)</option>
-                            <option value="schooner">Schooner (425ml)</option>
-                            <option value="pot">Pot (285ml)</option>
-                            <option value="bottle">Bottle</option>
-                            <option value="can">Can</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="beer-price">Price (AUD) *</label>
-                    <input type="number" id="beer-price" min="0" step="0.01" required placeholder="0.00">
-                </div>
+                <!-- Pub form fields go here -->
             </div>
             <div class="modal-footer">
                 <button class="modal-btn btn-cancel">Cancel</button>
                 <button class="modal-btn btn-submit">Add Pub</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Submit New Price Modal -->
+    <div class="modal" id="add-beer-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Submit New Price</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Existing Beers</h3>
+                <div id="existing-beers-list"></div>
+                
+                <h3>Add New Beer</h3>
+                <div class="form-group">
+                    <label for="new-beer-name">New Beer Name *</label>
+                    <input type="text" id="new-beer-name" placeholder="Enter beer name">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new-beer-size">Size</label>
+                        <select id="new-beer-size">
+                            <option value="pint">Pint</option>
+                            <option value="schooner">Schooner</option>
+                            <option value="can">Can</option>
+                            <option value="jug">Jug</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-beer-price">Price (AUD) *</label>
+                        <input type="number" id="new-beer-price" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel">Cancel</button>
+                <button class="modal-btn btn-submit">Submit Price</button>
             </div>
         </div>
     </div>
@@ -677,342 +130,106 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // =====================================
-        // BEERSPY APPLICATION LOGIC
-        // =====================================
-        
-        const pubs = [];
-        
-        document.addEventListener("DOMContentLoaded", function() {
+        // Initialize Supabase
+        const { createClient } = supabase;
+        const supabaseUrl = 'YOUR_SUPABASE_URL';
+        const supabaseKey = 'YOUR_SUPABASE_KEY';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // Initialize the pubs array
+        let pubs = []; // This will hold your pub data
+
+        document.addEventListener("DOMContentLoaded", async function() {
             console.log("BeerSpy app initialized");
-            
-            // Create map with Melbourne coordinates
+
+            // Fetch pubs from Supabase
+            const { data, error } = await supabase
+                .from('pubs')
+                .select('*');
+
+            if (error) {
+                console.error('Error fetching pubs:', error);
+            } else {
+                pubs = data; // Assign fetched data to pubs
+                renderPubs(); // Render pubs on the map
+            }
+
+            // Initialize the map
             const map = L.map('map').setView([-37.8136, 144.9631], 13);
-            
-            // Add OpenStreetMap layer
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
-            
-            // =====================================
-            // DATA MANAGEMENT
-            // =====================================
-            // For simplicity, we're using hardcoded data
-            // In a real app, you would fetch this from a database
-            
-            
-            // Current beer size filter
-            let currentSize = "pint";
-            let markers = [];
-            
-            // =====================================
-            // MAP MARKER PLACEMENT
-            // =====================================
-            // Creates a divIcon with custom CSS for entirely custom marker appearance
-            function createCustomIcon(price) {
-                return L.divIcon({
-                    className: 'price-tooltip',
-                    html: `$${price.toFixed(2)}`,
-                    iconSize: [80, 35]
+
+            // Show modal for submitting new prices
+            document.querySelector('.add-beer-btn').addEventListener('click', function() {
+                document.getElementById('add-beer-modal').style.display = 'flex';
+                populateExistingBeers(); // Populate the beer list
+            });
+
+            // Populate existing beers
+            function populateExistingBeers() {
+                const existingBeersList = document.getElementById('existing-beers-list');
+                existingBeersList.innerHTML = ''; // Clear previous entries
+
+                pubs.forEach(pub => {
+                    pub.beers.forEach(beer => {
+                        const beerElement = document.createElement('div');
+                        beerElement.innerHTML = `
+                            <div>
+                                <strong>${beer.name}</strong> (${beer.size}): 
+                                <input type="number" placeholder="Price" data-pub="${pub.id}" data-beer="${beer.name}" min="0" step="0.01">
+                            </div>
+                        `;
+                        existingBeersList.appendChild(beerElement);
+                    });
                 });
             }
-            
-            // Update statistics
-            function updateStatistics() {
-                const totalPubs = pubs.length;
-                const totalBeers = pubs.reduce((total, pub) => total + pub.beers.length, 0);
-                
-                // Calculate average price based on current size and all pubs
-                const prices = [];
-                pubs.forEach(pub => {
-                    const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
-                    if (beersForSize.length > 0) {
-                        beersForSize.forEach(beer => prices.push(beer.price));
+
+            // Submit new beer prices
+            document.querySelector('.btn-submit').addEventListener('click', async function() {
+                const newBeerName = document.getElementById('new-beer-name').value.trim();
+                const newBeerSize = document.getElementById('new-beer-size').value;
+                const newBeerPrice = parseFloat(document.getElementById('new-beer-price').value);
+
+                // Add new beer if provided
+                if (newBeerName && !isNaN(newBeerPrice)) {
+                    const pubId = /* logic to get the relevant pub id, e.g., from a selected pub */;
+                    const pub = pubs.find(p => p.id === pubId);
+                    if (pub) {
+                        pub.beers.push({ name: newBeerName, size: newBeerSize, price: newBeerPrice });
+                        await supabase
+                            .from('beers')
+                            .insert([{ pub_id: pubId, name: newBeerName, size: newBeerSize, price: newBeerPrice }]);
+                        renderPubs(); // Refresh the map
                     }
-                });
-                
-                const avgPrice = prices.length > 0 
-                    ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
-                    : "N/A";
-                
-                document.getElementById('pubs-count').textContent = totalPubs;
-                document.getElementById('beers-count').textContent = totalBeers;
-                document.getElementById('avg-price').textContent = `$${avgPrice}`;
-            }
-            
-            // Renders pubs on the map
-            function renderPubs() {
-                // Clear previous markers
-                markers.forEach(marker => map.removeLayer(marker));
-                markers = [];
-                
-                pubs.forEach(pub => {
-                    // Filter beers to current size and find min price
-                    const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
+                }
+
+                // Update prices for existing beers
+                const priceInputs = document.querySelectorAll('#existing-beers-list input[type="number"]');
+                priceInputs.forEach(async input => {
+                    const beerName = input.dataset.beer;
+                    const pubId = parseInt(input.dataset.pub);
+                    const updatedPrice = parseFloat(input.value);
                     
-                    if (beersForSize.length === 0) return;
-                    
-                    const minPrice = Math.min(...beersForSize.map(beer => beer.price));
-                    
-                    // Create custom marker
-                    const marker = L.marker([pub.lat, pub.lon], {
-                        icon: createCustomIcon(minPrice)
-                    }).addTo(map);
-                    
-                    // Attach pub data to marker
-                    marker.pubData = pub;
-                    
-                    // Add click handler
-                    marker.on('click', onMarkerClick);
-                    
-                    markers.push(marker);
-                });
-                
-                // Update statistics
-                updateStatistics();
-            }
-            
-            // Reset the form
-            function resetForm() {
-                document.getElementById('pub-name').value = '';
-                document.getElementById('pub-address').value = '';
-                document.getElementById('pub-lat').value = '';
-                document.getElementById('pub-lon').value = '';
-                document.getElementById('beer-name').value = '';
-                document.getElementById('beer-size').value = 'pint';
-                document.getElementById('beer-price').value = '';
-            }
-            
-            // =====================================
-            // GEOCODING FUNCTION
-            // =====================================
-            async function geocodeAddress(address) {
-                // Use OpenStreetMap Nominatim API for geocoding
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
-                
-                try {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    
-                    if (data && data.length > 0) {
-                        const firstResult = data[0];
-                        const lat = parseFloat(firstResult.lat);
-                        const lon = parseFloat(firstResult.lon);
-                        
-                        if (!isNaN(lat) && !isNaN(lon)) {
-                            // Update form fields
-                            document.getElementById('pub-lat').value = lat;
-                            document.getElementById('pub-lon').value = lon;
-                            
-                            // Zoom to location
-                            map.setView([lat, lon], 16);
-                            return true;
+                    if (!isNaN(updatedPrice)) {
+                        const pub = pubs.find(p => p.id === pubId);
+                        const beer = pub.beers.find(b => b.name === beerName);
+                        if (beer) {
+                            beer.price = updatedPrice; // Update the price
+                            await supabase
+                                .from('beers')
+                                .update({ price: updatedPrice })
+                                .match({ pub_id: pubId, name: beerName });
                         }
                     }
-                    
-                    alert('Location not found. Please try a different address.');
-                    return false;
-                    
-                } catch (error) {
-                    console.error('Geocoding error:', error);
-                    alert('Error finding location. Please check your internet connection.');
-                    return false;
-                }
-            }
-            
-            // =====================================
-            // EVENT HANDLERS
-            // =====================================
-            // Handles when a marker is clicked
-            function onMarkerClick(e) {
-                const pub = e.target.pubData;
-                
-                // Filter beers for current size
-                const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
-                
-                // Create popup content
-                let popupContent = `<div class="pub-popup">
-                    <h3>${pub.name}</h3>
-                    <div class="address">${pub.address}</div>
-                    <table class="beer-table">
-                        <tr>
-                            <th>Beer</th>
-                            <th>Size</th>
-                            <th>Price</th>
-                        </tr>`;
-                
-                beersForSize.forEach(beer => {
-                    popupContent += `
-                        <tr>
-                            <td>${beer.name}</td>
-                            <td>${beer.size}</td>
-                            <td class="beer-price">$${beer.price.toFixed(2)}</td>
-                        </tr>
-                    `;
                 });
-                
-                popupContent += `</table>
-                    <div class="last-updated">Updated: Today</div>
-                    <div class="popup-actions">
-                        <button class="add-beer-btn">Add New Beer</button>
-                    </div>
-                </div>`;
-                
-                // Open popup
-                e.target.bindPopup(popupContent, { minWidth: 280 }).openPopup();
-            }
-            
-            // Modal controls
-            const modal = document.getElementById('add-pub-modal');
-            const modalCloseBtn = document.querySelector('.close-btn');
-            const modalCancelBtn = document.querySelector('.btn-cancel');
-            const modalSubmitBtn = document.querySelector('.btn-submit');
-            const findLocationBtn = document.getElementById('find-location');
-            
-            // Show modal
-            document.getElementById('add-pub-btn').addEventListener('click', function() {
-                modal.style.display = 'flex';
-                resetForm();
-            });
-            
-            // Close modal with any close button
-            [modalCloseBtn, modalCancelBtn].forEach(btn => {
-                btn.addEventListener('click', function() {
-                    modal.style.display = 'none';
-                });
-            });
-            
-            // Geocode address to get coordinates
-            findLocationBtn.addEventListener('click', async function() {
-                const address = document.getElementById('pub-address').value.trim();
-                if (!address) {
-                    alert('Please enter an address');
-                    return;
-                }
-                
-                // Disable button while searching
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                this.disabled = true;
-                
-                // Perform geocoding
-                await geocodeAddress(address);
-                
-                // Revert button
-                this.innerHTML = '<i class="fas fa-location-arrow"></i>';
-                this.disabled = false;
-            });
-            
-            // Submit new pub
-            modalSubmitBtn.addEventListener('click', async function() {
-                const name = document.getElementById('pub-name').value.trim();
-                const address = document.getElementById('pub-address').value.trim();
-                const lat = document.getElementById('pub-lat').value.trim();
-                const lon = document.getElementById('pub-lon').value.trim();
-                const beerName = document.getElementById('beer-name').value.trim();
-                const beerSize = document.getElementById('beer-size').value;
-                const beerPrice = parseFloat(document.getElementById('beer-price').value);
-                
-                // Validation
-                if (!name) {
-                    alert('Pub name is required');
-                    return;
-                }
-                
-                if (!address) {
-                    alert('Address is required');
-                    return;
-                }
-                
-                if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
-                    alert('Please validate the location before submitting');
-                    return;
-                }
-                
-                if (!beerName || !beerSize || !beerPrice || isNaN(beerPrice)) {
-                    alert('Please enter valid beer details');
-                    return;
-                }
-                
-                // Create new pub object
-                const newPub = {
-                    id: pubs.length + 1,
-                    name,
-                    address,
-                    lat: parseFloat(lat),
-                    lon: parseFloat(lon),
-                    beers: [
-                        { name: beerName, size: beerSize, price: beerPrice }
-                    ]
-                };
-                
-                // Add to data
-                pubs.push(newPub);
-                renderPubs();
-                
+
                 // Close modal and reset form
-                modal.style.display = 'none';
+                document.getElementById('add-beer-modal').style.display = 'none';
                 resetForm();
             });
-            
-            // Size filter button handlers
-            document.querySelectorAll('.size-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    document.querySelectorAll('.size-btn').forEach(btn => 
-                        btn.classList.remove('active'));
-                    
-                    this.classList.add('active');
-                    currentSize = this.dataset.size;
-                    renderPubs();
-                });
-            });
-            
-            // Search input handler
-            document.getElementById('pub-search').addEventListener('input', function(e) {
-                const query = e.target.value.trim().toLowerCase();
-                const resultsDiv = document.getElementById('search-results');
-                
-                if (query.length < 3) {
-                    resultsDiv.style.display = 'none';
-                    return;
-                }
-                
-                // Filter pubs by name and address
-                const results = pubs.filter(pub => 
-                    pub.name.toLowerCase().includes(query) || 
-                    pub.address.toLowerCase().includes(query)
-                );
-                
-                if (results.length > 0) {
-                    resultsDiv.innerHTML = results.slice(0, 5).map(pub => 
-                        `<div class="search-item" data-id="${pub.id}">
-                            <div style="font-weight:600">${pub.name}</div>
-                            <div style="font-size:0.9em;opacity:0.8">${pub.address}</div>
-                        </div>`
-                    ).join('');
-                    
-                    resultsDiv.style.display = 'block';
-                    
-                    // Add click handlers to search items
-                    document.querySelectorAll('.search-item').forEach(item => {
-                        item.addEventListener('click', function() {
-                            const pubId = parseInt(this.dataset.id);
-                            const pub = pubs.find(pub => pub.id === pubId);
-                            
-                            if (pub) {
-                                map.setView([pub.lat, pub.lon], 16);
-                                resultsDiv.style.display = 'none';
-                                document.getElementById('pub-search').value = '';
-                            }
-                        });
-                    });
-                } else {
-                    resultsDiv.innerHTML = '<div class="search-item">No matching pubs found</div>';
-                    resultsDiv.style.display = 'block';
-                }
-            });
-            
-            // Initialize the app
-            renderPubs();
+
+            // Other existing functions and event listeners...
         });
     </script>
 </body>
