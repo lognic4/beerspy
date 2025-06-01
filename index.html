@@ -16,6 +16,7 @@
 
     #view-container {
       position: absolute;
+      max-width:25%;
       top: 10px;
       left: 10px;
       z-index: 1000;
@@ -27,9 +28,11 @@
     }
     #view-container label {
       margin-right: 0.5rem;
+      font-weight: bold;
     }
     #view-container select {
       font-size: 1rem;
+      padding: 0.25rem;
     }
 
     .cheap-label {
@@ -57,23 +60,19 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
-  <!-- Using jsDelivr CDN for Supabase with fixed MIME type -->
   <script type="module">
-    // Import createClient from jsDelivr CDN
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
     document.addEventListener("DOMContentLoaded", async () => {
-      console.log("DOM fully loaded");
+      console.log("DOM loaded");
       
-      // ──── A) SUPABASE CONFIGURATION ───────────────────────────────────
       const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";
       const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
 
-      // Initialize Supabase client
       const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log("Supabase client initialized", sbClient);
+      console.log("Supabase client initialized");
 
-      // ──── B) LEAFLET MAP SETUP ────────────────────────────────────────
+      // Initialize map with Melbourne coordinates
       const mainMap = L.map("map").setView([-37.8136, 144.9631], 12);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors"
@@ -82,133 +81,143 @@
 
       let markers = [];
 
-      // ──── C) REFRESH MARKERS FUNCTION ────────────────────────────────
+      // KEY CHANGE: Simplified data fetching without group method
       async function refreshMarkers(view = "min") {
-        console.log(`Refreshing markers for view: ${view}`);
-        
-        // Clear existing markers
-        markers.forEach(m => {
-          if (m && m.remove) m.remove();
-        });
-        markers = [];
-        console.log("Cleared existing markers");
-
-        // Determine aggregation type
-        let agg, alias;
-        if (view === "min") {
-          agg = "min(price)";
-          alias = "cheapest_price";
-        } else if (view === "avg") {
-          agg = "avg(price)";
-          alias = "avg_price";
-        } else if (view === "max") {
-          agg = "max(price)";
-          alias = "expensive_price";
-        }
-
         try {
-          // Fetch data from Supabase
-          const { data: pubsData, error } = await sbClient
+          console.log("Refreshing markers...");
+          
+          // Clear existing markers
+          markers.forEach(m => mainMap.removeLayer(m));
+          markers = [];
+          
+          // Get ALL prices from our database
+          const { data: allPrices, error } = await sbClient
             .from("beer_prices")
-            .select(`pub_name, lat, lon, ${agg} as ${alias}`)
-            .group("pub_name, lat, lon");
-
-          if (error) {
-            console.error("Supabase error:", error);
+            .select("pub_name, lat, lon, price");
+          
+          if (error || !allPrices?.length) {
+            console.error("Error fetching prices:", error || "No data found");
             return;
           }
+          console.log(`Fetched ${allPrices.length} price records`);
 
-          console.log(`Received ${pubsData?.length || 0} pubs from Supabase`);
+          // Group prices by pub location
+          const pubData = {};
+          
+          allPrices.forEach(item => {
+            // Unique key for each pub location
+            const key = `${item.pub_name}|${item.lat}|${item.lon}`;
+            
+            if (!pubData[key]) {
+              pubData[key] = {
+                name: item.pub_name,
+                lat: item.lat,
+                lon: item.lon,
+                prices: []
+              };
+            }
+            pubData[key].prices.push(item.price);
+          });
 
-          // Add new markers
-          pubsData?.forEach(pub => {
-            const priceVal = pub[alias];
-            if (!pub.lat || !pub.lon) return;
+          // Calculate totals for each pub
+          const pubs = Object.values(pubData).map(pub => {
+            const sorted = [...pub.prices].sort((a, b) => a - b);
+            return {
+              ...pub,
+              min: sorted[0],
+              max: sorted[sorted.length - 1],
+              avg: pub.prices.reduce((sum, price) => sum + price, 0) / pub.prices.length
+            };
+          });
+
+          // Create markers for each pub
+          pubs.forEach(pub => {
+            const priceDisplay = {
+              min: `$${pub.min.toFixed(2)}`,
+              avg: `$${pub.avg.toFixed(2)}`,
+              max: `$${pub.max.toFixed(2)}`
+            }[view];
             
-            const m = L.marker([pub.lat, pub.lon]).addTo(mainMap);
+            const marker = L.marker([pub.lat, pub.lon]).addTo(mainMap);
             
-            m.bindTooltip(`$${priceVal?.toFixed(2) || '0.00'}`, {
+            // Show price as tooltip
+            marker.bindTooltip(`${priceDisplay}`, {
               permanent: true,
               direction: "top",
               className: "cheap-label"
             });
-
-            m.on("click", () => showPubDetails(pub.pub_name, pub.lat, pub.lon));
-            markers.push(m);
+            
+            // Add click handler to show details
+            marker.on("click", () => showPubDetails(pub.lat, pub.lon, pub.name));
+            markers.push(marker);
           });
-
-          console.log(`Added ${markers.length} markers to map`);
-
+          
+          console.log(`Added ${markers.length} markers`);
         } catch (err) {
-          console.error("Error in refreshMarkers:", err);
+          console.error("Marker refresh error:", err);
         }
       }
 
-      // ──── D) PUB DETAILS FUNCTION ────────────────────────────────────
-      async function showPubDetails(pubName, lat, lon) {
-        console.log(`Fetching details for: ${pubName}`);
-        
+      async function showPubDetails(lat, lon, pubName) {
         try {
+          // Get all beers for this pub location
           const { data: beers, error } = await sbClient
             .from("beer_prices")
-            .select("beer_name, size, price, location, last_updated")
-            .eq("pub_name", pubName);
-
-          if (error || !beers || beers.length === 0) {
-            console.error("Pub details error:", error);
-            return;
-          }
-
-          console.log(`Found ${beers.length} beers for ${pubName}`);
-
-          // Build popup content
-          let html = `<div style="min-width:180px; font-family:sans-serif">
-            <strong>${pubName}</strong><br>
-            <em>${beers[0].location || "Location unknown"}</em><hr>
-            <table style="width:100%; font-size:0.9rem; border-collapse:collapse">
-              <thead><tr>
-                <th style="text-align:left">Beer</th>
-                <th style="text-align:left">Size</th>
-                <th style="text-align:right">Price</th>
-              </tr></thead>
-              <tbody>`;
-
-          beers.forEach(b => {
-            html += `<tr>
-              <td>${b.beer_name || 'Unknown'}</td>
-              <td>${b.size || '?'}</td>
-              <td style="text-align:right">$${(b.price || 0).toFixed(2)}</td>
-            </tr>`;
-          });
-
-          html += `</tbody></table><br>
-            <small>Last updated: ${new Date(
-              beers[0]?.last_updated || Date.now()
-            ).toLocaleString()}</small>
-          </div>`;
-
-          // Show popup
-          L.popup({ maxWidth: 240 })
+            .select("*")
+            .eq("pub_name", pubName)
+            .eq("lat", lat)
+            .eq("lon", lon);
+          
+          if (error || !beers?.length) return;
+          
+          // Generate table of beer prices
+          const beerRows = beers
+            .sort((a, b) => a.price - b.price)
+            .map(beer => `
+              <tr>
+                <td>${beer.beer_name || "Unknown Beer"}</td>
+                <td>${beer.size || "?"}</td>
+                <td>${beer.price.toFixed(2)}</td>
+              </tr>
+            `).join("");
+          
+          // Create popup content
+          const html = `
+            <div style="min-width:220px;max-width:300px">
+              <h3 style="margin:0">${pubName}</h3>
+              <p>${beers[0].location || "Location not available"}</p>
+              <table style="width:100%;border-collapse:collapse;margin:10px 0">
+                <tr>
+                  <th style="text-align:left">Beer</th>
+                  <th style="text-align:left">Size</th>
+                  <th style="text-align:right">Price</th>
+                </tr>
+                ${beerRows}
+              </table>
+              <small>Last updated: ${new Date(beers[0].last_updated).toLocaleDateString()}</small>
+            </div>
+          `;
+          
+          // Create and open popup
+          const popup = L.popup({ maxWidth: 300 })
             .setLatLng([lat, lon])
-            .setContent(html)
-            .openOn(mainMap);
-
+            .setContent(html);
+          
+          mainMap.openPopup(popup);
         } catch (err) {
-          console.error("Error showing pub details:", err);
+          console.error("Pub details error:", err);
         }
       }
 
-      // ──── E) INITIAL LOAD AND EVENT LISTENERS ────────────────────────
-      try {
-        await refreshMarkers("min");
-        console.log("Initial markers loaded");
-      } catch (err) {
-        console.error("Initial load error:", err);
-      }
-
+      // Initial load - show cheapest prices
+      await refreshMarkers("min");
+      
+      // Handle view selector change
       document.getElementById("view-select").addEventListener("change", (e) => {
         refreshMarkers(e.target.value);
       });
+
+      console.log("Application ready");
     });
   </script>
 </body>
