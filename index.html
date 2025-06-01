@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BeerSpy Map - Melbourne Beer Prices</title>
+  <title>BeerSpy Map - Melbourne 🍺</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -11,23 +11,26 @@
   <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+  <!-- Google Fonts for Helvetica-like font -->
+  <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700&display=swap" rel="stylesheet">
+
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      font-family: 'Nunito', 'Helvetica', Arial, sans-serif;
     }
     
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f5f5f5;
+      background: #f8f9fa;
       color: #333;
       overflow: hidden;
     }
     
-    /* Header styling */
+    /* Header styling - simplified */
     header {
-      background: linear-gradient(135deg, #ff9900, #e65100);
+      background: #2c3e50;
       color: white;
       padding: 1rem;
       text-align: center;
@@ -44,12 +47,23 @@
       align-items: center;
       gap: 10px;
       font-size: 1.5rem;
-      font-weight: bold;
+      font-weight: 600;
+      font-family: 'Nunito', sans-serif;
     }
     
-    .logo i {
-      color: #fff3e0;
+    .beer-emoji {
       font-size: 1.8rem;
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    .app-desc {
+      font-size: 1.1rem;
+      opacity: 0.9;
     }
     
     /* Map container */
@@ -62,15 +76,15 @@
     /* View control panel */
     #view-container {
       position: absolute;
-      top: 85px;
+      top: 15px;
       left: 15px;
       z-index: 1000;
       background: white;
-      padding: 0.8rem;
+      padding: 12px;
       border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      font-family: sans-serif;
-      max-width: 200px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      font-family: 'Nunito', sans-serif;
+      max-width: 240px;
       min-width: 180px;
     }
     
@@ -78,50 +92,60 @@
       display: block;
       margin-bottom: 8px;
       font-weight: 600;
-      color: #e65100;
-      font-size: 0.95rem;
+      color: #2c3e50;
+      font-size: 1rem;
     }
     
-    #view-select {
-      width: 100%;
+    .sort-options {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .size-btn {
+      flex: 1;
       padding: 8px;
-      border: 1px solid #ddd;
+      border: none;
       border-radius: 4px;
-      background-color: #fff;
-      font-size: 0.95rem;
+      background: #f1f1f1;
+      color: #555;
+      font-size: 0.9rem;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
     
-    #view-select:focus {
-      outline: none;
-      border-color: #ff9900;
-      box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.2);
+    .size-btn.active {
+      background: #2c3e50;
+      color: white;
+    }
+    
+    .size-btn:hover:not(.active) {
+      background: #e9ecef;
     }
     
     /* Styling for the price tooltip on markers */
     .cheap-label {
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.95);
       border-radius: 4px;
-      padding: 5px 8px;
+      padding: 5px 10px;
       font-size: 0.95rem;
       font-weight: bold;
-      color: #e65100;
+      color: #e74c3c;
       border: 1px solid #ddd;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
       text-align: center;
       min-width: 70px;
     }
     
     /* Add pub button */
     #add-pub-btn {
-      position: absolute;
-      bottom: 25px;
-      right: 25px;
-      z-index: 1000;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1010;
       width: 55px;
       height: 55px;
       border-radius: 50%;
-      background: #e65100;
+      background: #3498db;
       color: white;
       border: none;
       font-size: 1.5rem;
@@ -134,14 +158,14 @@
     }
     
     #add-pub-btn:hover {
-      background: #ff9900;
-      transform: scale(1.1);
+      background: #2980b9;
+      transform: scale(1.08);
     }
     
     /* Pub detail popup styling */
     .leaflet-popup-content-wrapper {
       border-radius: 8px;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
       padding: 0;
       overflow: hidden;
     }
@@ -151,41 +175,36 @@
       width: 300px !important;
     }
     
-    .pub-header {
-      background: linear-gradient(135deg, #e65100, #ff9900);
+    .popup-header {
+      background-color: #2c3e50;
       color: white;
       padding: 15px;
     }
     
-    .pub-header h3 {
-      margin: 0;
-      padding: 0;
+    .popup-header h3 {
+      margin: 0 0 5px 0;
       font-size: 1.3rem;
-      margin-bottom: 5px;
     }
     
-    .pub-header p {
+    .popup-header p {
       margin: 0;
       font-size: 0.9rem;
-      opacity: 0.9;
+      opacity: 0.85;
     }
     
     .beer-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.9rem;
-      margin-bottom: 5px;
-    }
-    
-    .beer-table thead {
-      background-color: #f9f9f9;
+      margin: 0;
     }
     
     .beer-table th {
       text-align: left;
-      padding: 8px 12px;
-      border-bottom: 1px solid #eee;
-      color: #666;
+      padding: 10px 12px;
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+      color: #495057;
     }
     
     .beer-table td {
@@ -200,146 +219,125 @@
     .beer-price {
       text-align: right;
       font-weight: bold;
+      color: #e74c3c;
     }
     
-    .last-updated {
-      padding: 8px 12px;
-      background: #f9f9f9;
-      font-size: 0.8rem;
-      color: #888;
-      border-top: 1px solid #eee;
-    }
-    
-    /* Add pub modal */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 1100;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .modal-content {
-      background: white;
-      border-radius: 8px;
-      width: 90%;
-      max-width: 500px;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    }
-    
-    .modal-header {
-      background: linear-gradient(135deg, #e65100, #ff9900);
-      color: white;
-      padding: 15px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .modal-header h2 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-    
-    .modal-header .close {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 1.5rem;
-      cursor: pointer;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    
-    .modal-header .close:hover {
-      background: rgba(255,255,255,0.2);
-    }
-    
-    .modal-body {
-      padding: 20px;
-    }
-    
-    .form-group {
-      margin-bottom: 15px;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
-      color: #555;
-    }
-    
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-    
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: #ff9900;
-      box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.2);
-    }
-    
-    .action-buttons {
+    .popup-actions {
+      padding: 10px 12px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      margin-top: 20px;
     }
     
     .btn {
-      padding: 10px 20px;
+      padding: 8px 15px;
       border: none;
       border-radius: 4px;
-      font-size: 1rem;
-      font-weight: 500;
+      font-size: 0.9rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
     
     .btn-primary {
-      background: #ff9900;
+      background: #3498db;
       color: white;
     }
     
     .btn-primary:hover {
-      background: #e65100;
+      background: #2980b9;
     }
     
-    .btn-outline {
+    /* Search bar styling */
+    .search-container {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 1000;
+      width: 300px;
+    }
+    
+    .search-bar {
+      position: relative;
+    }
+    
+    .search-bar input {
+      width: 100%;
+      padding: 12px 45px 12px 15px;
+      border: 2px solid #ddd;
+      border-radius: 30px;
+      font-size: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .search-bar input:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 2px 12px rgba(52, 152, 219, 0.3);
+    }
+    
+    .search-icon {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #95a5a6;
+    }
+    
+    .search-results {
+      position: absolute;
+      width: 100%;
+      max-height: 300px;
+      overflow-y: auto;
       background: white;
-      border: 1px solid #ddd;
-      color: #666;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      margin-top: 8px;
+      z-index: 10;
+      display: none;
     }
     
-    .btn-outline:hover {
-      background: #f5f5f5;
+    .search-item {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .search-item:hover {
+      background: #f1f5f9;
+    }
+    
+    .search-item:last-child {
+      border-bottom: none;
+    }
+    
+    /* Floating stats */
+    .pub-stats {
+      position: absolute;
+      bottom: 20px;
+      left: 15px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      padding: 12px 15px;
+      border-radius: 8px;
+      box-shadow: 0 3px9px rgba(0,0,0,0.15);
+      font-size: 0.9rem;
+    }
+    
+    .pub-stats span {
+      font-weight: 600;
+      color: #3498db;
     }
   </style>
 </head>
 <body>
   <header>
     <div class="logo">
-      <i class="fas fa-beer"></i>
+      <div class="beer-emoji">🍺</div>
       <h1>BeerSpy Melbourne</h1>
     </div>
     <div class="app-desc">Find the best beer prices across Melbourne</div>
@@ -348,476 +346,390 @@
   <!-- Map container -->
   <div id="map"></div>
   
-  <!-- View selection -->
+  <!-- Beer size selection -->
   <div id="view-container">
-    <label for="view-select">View by:</label>
-    <select id="view-select">
-      <option value="min">Cheapest Beer</option>
-      <option value="avg">Average Price</option>
-      <option value="max">Most Expensive</option>
-    </select>
+    <label>Sort by Beer Size:</label>
+    <div class="sort-options">
+      <button class="size-btn active" data-size="pint">Pint</button>
+      <button class="size-btn" data-size="schooner">Schooner</button>
+      <button class="size-btn" data-size="pot">Pot</button>
+    </div>
   </div>
   
-  <!-- Add pub button -->
-  <button id="add-pub-btn" title="Add New Pub">
-    <i class="fas fa-plus"></i>
-  </button>
+  <!-- Pub stats -->
+  <div class="pub-stats">
+    <i class="fas fa-beer"></i> Showing data for <span id="stats-count">7</span> pubs
+  </div>
   
-  <!-- Add pub modal -->
-  <div class="modal" id="add-pub-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Add Pub to BeerSpy</h2>
-        <button class="close">&times;</button>
+  <!-- Search bar -->
+  <div class="search-container">
+    <div class="search-bar">
+      <input type="text" id="address-search" placeholder="Search pub by name or address...">
+      <div class="search-icon">
+        <i class="fas fa-search"></i>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="pub-name">Pub Name</label>
-          <input type="text" id="pub-name" placeholder="Enter pub name">
-        </div>
-        <div class="form-group">
-          <label for="pub-address">Address</label>
-          <input type="text" id="pub-address" placeholder="Search pub address">
-        </div>
-        
-        <h3 style="margin-top: 20px; margin-bottom: 15px;">Beer Prices</h3>
-        <div class="beer-list">
-          <div class="beer-item">
-            <div class="form-group">
-              <label>Beer Name</label>
-              <input type="text" class="beer-name" placeholder="Beer name">
-            </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-              <div class="form-group" style="width: 60%;">
-                <label>Size</label>
-                <select class="beer-size">
-                  <option value="pint">Pint (568ml)</option>
-                  <option value="pot">Pot (285ml)</option>
-                  <option value="schooner">Schooner (425ml)</option>
-                  <option value="bottle">Bottle</option>
-                  <option value="can">Can</option>
-                </select>
-              </div>
-              <div class="form-group" style="width: 40%;">
-                <label>Price (AUD)</label>
-                <input type="number" min="0" step="0.01" class="beer-price" placeholder="0.00">
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <button id="add-another-beer" class="btn-outline" style="margin-bottom: 20px;">
-          <i class="fas fa-plus"></i> Add Another Beer
-        </button>
-        
-        <div class="action-buttons">
-          <button class="btn btn-outline" id="cancel-add">Cancel</button>
-          <button class="btn btn-primary" id="save-pub">Add Pub</button>
-        </div>
+      <div class="search-results" id="search-results">
+        <!-- Results will be inserted here -->
       </div>
     </div>
   </div>
-
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
+  <!-- Add pub button -->
+  <button id="add-pub-btn">
+    <i class="fas fa-plus"></i>
+  </button>
+
   <!-- Using jsDelivr CDN for Supabase -->
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
     document.addEventListener("DOMContentLoaded", async () => {
-      console.log("DOM loaded");
+      console.log("BeerSpy app initializing");
       
-      const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";
-      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
-
-      const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log("Supabase client initialized");
-
+      /** =========================================
+       *  DATA & STATE MANAGEMENT
+       * ========================================= */
+      // Array of pubs with beer data
+      let pubs = [];
+      
+      // Current beer size filter
+      let currentSize = "pint";
+      
+      // Pub statistics
+      let pubStats = {
+        pubCount: 0,
+        beerCount: 0
+      };
+      
       /** =========================================
        *  MAP INITIALIZATION
        * ========================================= */
       // Initialize map with Melbourne coordinates
-      const mainMap = L.map("map").setView([-37.8136, 144.9631], 12);
+      const mainMap = L.map("map").setView([-37.8136, 144.9631], 13);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors"
       }).addTo(mainMap);
       console.log("Map initialized");
-
+      
+      // Map markers array
       let markers = [];
-
-      /** =========================================
-       *  VIEW STATE MANAGEMENT
-       * ========================================= */
-      let currentView = "min";
       
       /** =========================================
-       *  FIXED MARKER POPUPS
-       *  
-       *  We'll create a unique ID for each pub using 
-       *  its name, latitude and longitude to prevent conflicts
+       *  LOAD SIMULATED PUB DATA
        * ========================================= */
-
+      function loadSimulatedData() {
+        return new Promise(resolve => {
+          setTimeout(() => {
+            pubs = [
+              {
+                id: 1, 
+                name: "The Hoppy Brewer",
+                location: "123 Flinders Lane, CBD",
+                lat: -37.814, 
+                lon: 144.967,
+                minPrice: 9.50,
+                beers: [
+                  { name: "Carlton Draught", size: "pint", price: 12.50 },
+                  { name: "Fosters", size: "pint", price: 10.00 },
+                  { name: "Craft Pale Ale", size: "pint", price: 13.00 },
+                  { name: "Heineken", size: "schooner", price: 8.50 },
+                  { name: "Victoria Bitter", size: "pot", price: 7.00 }
+                ]
+              },
+              {
+                id: 2, 
+                name: "Melbourne Alehouse",
+                location: "246 Collins Street, CBD",
+                lat: -37.816, 
+                lon: 144.962,
+                minPrice: 8.00,
+                beers: [
+                  { name: "Stout", size: "pint", price: 14.00 },
+                  { name: "IPA", size: "pint", price: 15.00 },
+                  { name: "Lager", size: "schooner", price: 9.50 },
+                  { name: "Pilsner", size: "pot", price: 7.50 }
+                ]
+              },
+              {
+                id: 3, 
+                name: "River City Pub",
+                location: "45 Southbank Blvd, Southbank",
+                lat: -37.822, 
+                lon: 144.959,
+                minPrice: 8.50,
+                beers: [
+                  { name: "Golden Ale", size: "pint", price: 13.50 },
+                  { name: "Wheat Beer", size: "pint", price: 14.00 },
+                  { name: "Amber Ale", size: "schooner", price: 9.00 },
+                  { name: "Pale Lager", size: "pot", price: 8.00 }
+                ]
+              },
+              {
+                id: 4, 
+                name: "The Beer Garden",
+                location: "78 Richmond Road, Richmond",
+                lat: -37.818, 
+                lon: 144.990,
+                minPrice: 8.50,
+                beers: [
+                  { name: "Saison", size: "pint", price: 15.00 },
+                  { name: "Porter", size: "pint", price: 14.50 },
+                  { name: "Belgian Ale", size: "schooner", price: 10.00 },
+                  { name: "Session IPA", size: "pot", price: 8.50 }
+                ]
+              },
+              {
+                id: 5, 
+                name: "Docklands Brews",
+                location: "99 Harbour Esplanade, Docklands",
+                lat: -37.825, 
+                lon: 144.950,
+                minPrice: 9.00,
+                beers: [
+                  { name: "Hazy IPA", size: "pint", price: 16.00 },
+                  { name: "Sour Ale", size: "pint", price: 15.00 },
+                  { name: "Brown Ale", size: "schooner", price: 10.50 },
+                  { name: "Red Ale", size: "pot", price: 9.00 }
+                ]
+              }
+            ];
+            
+            pubStats = {
+              pubCount: pubs.length,
+              beerCount: pubs.reduce((acc, pub) => acc + pub.beers.length, 0)
+            };
+            
+            resolve();
+          }, 500);
+        });
+      }
+      
+      /** =========================================
+       *  SEARCH FUNCTIONALITY
+       * ========================================= */
+      const searchInput = document.getElementById("address-search");
+      const searchResults = document.getElementById("search-results");
+      
+      searchInput.addEventListener("input", () => {
+        if (searchInput.value.length > 2) {
+          simulateSearch(searchInput.value);
+        } else {
+          searchResults.style.display = "none";
+        }
+      });
+      
+      function simulateSearch(query) {
+        // Simulate search with mocked data
+        const simulatedResults = [
+          { name: "Beer O'clock Bar", address: "147 Bourke Street, Melbourne", lat: -37.8145, lon: 144.9687 },
+          { name: "Hop House", address: "321 Swanston St, Melbourne", lat: -37.8138, lon: 144.9632 },
+          { name: "The Frothy Pint", address: "678 Little Lonsdale St, Melbourne", lat: -37.8115, lon: 144.9624 },
+          { name: "Alehouse Tavern", address: "25 Queen St, Melbourne", lat: -37.8174, lon: 144.9581 },
+          { name: "Craft Beer Cellar", address: "92 Flinders Lane, Melbourne", lat: -37.8157, lon: 144.9691 }
+        ];
+        
+        // Filter simulated results by query
+        const results = simulatedResults.filter(location => 
+          location.name.toLowerCase().includes(query.toLowerCase()) || 
+          location.address.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        // Show results
+        displaySearchResults(results);
+      }
+      
+      function displaySearchResults(results) {
+        if (!results.length) {
+          searchResults.innerHTML = `<div class="search-item">No results found</div>`;
+          searchResults.style.display = "block";
+          return;
+        }
+        
+        searchResults.innerHTML = "";
+        
+        results.forEach(result => {
+          const item = document.createElement("div");
+          item.className = "search-item";
+          item.innerHTML = `
+            <strong>${result.name}</strong>
+            <div class="text-sm">${result.address}</div>
+          `;
+          
+          item.addEventListener("click", () => {
+            mainMap.setView([result.lat, result.lon], 16);
+            searchResults.style.display = "none";
+            searchInput.value = "";
+          });
+          
+          searchResults.appendChild(item);
+        });
+        
+        searchResults.style.display = "block";
+      }
+      
+      /** =========================================
+       *  FILTER BY BEER SIZE
+       * ========================================= */
+      const sizeButtons = document.querySelectorAll(".size-btn");
+      
+      sizeButtons.forEach(button => {
+        button.addEventListener("click", () => {
+          sizeButtons.forEach(btn => btn.classList.remove("active"));
+          button.classList.add("active");
+          
+          currentSize = button.getAttribute("data-size");
+          refreshMarkers();
+        });
+      });
+      
       /** =========================================
        *  REFRESH MARKERS FUNCTION
        * ========================================= */
-      async function refreshMarkers(view = "min") {
-        try {
-          console.log("Refreshing markers...");
-          currentView = view;
+      function refreshMarkers() {
+        // Clear existing markers
+        markers.forEach(marker => mainMap.removeLayer(marker));
+        markers = [];
+        
+        // Update stats
+        document.getElementById("stats-count").textContent = pubs.length;
+        
+        // Create new markers
+        pubs.forEach(pub => {
+          // Find the beer with selected size and lowest price
+          const beer = pub.beers
+            .filter(b => b.size === currentSize)
+            .sort((a, b) => a.price - b.price)[0];
           
-          // Clear existing markers
-          markers.forEach(m => mainMap.removeLayer(m));
-          markers = [];
+          if (!beer) return;
           
-          // Simulate Supabase request delay
-          console.log("Simulating Supabase connection...");
+          const marker = L.marker([pub.lat, pub.lon]).addTo(mainMap);
           
-          /** 
-           * TO REPLACE: SIMULATED DATA
-           * 
-           * Replace this with your actual Supabase query as:
-           * 
-           * const { data: allPrices, error } = await sbClient
-           *   .from("beer_prices")
-           *   .select("pub_name, lat, lon, price");
-           * 
-           * if (error || !allPrices?.length) ...
-           * 
-           * For this demo we'll use simulated data
-           */
-          await new Promise(resolve => setTimeout(resolve, 800));
-          
-          const allPrices = [
-            // Multiple entries for The Local Pub
-            {
-              pub_name: "The Local Pub",
-              lat: -37.8186,
-              lon: 144.9621,
-              price: 10.00,
-              beer_name: "Great Northern",
-              size: "Pint",
-              location: "123 Main St, CBD"
-            },
-            {
-              pub_name: "The Local Pub",
-              lat: -37.8186,
-              lon: 144.9621,
-              price: 8.50,
-              beer_name: "Carlton Draught",
-              size: "Schooner",
-              location: "123 Main St, CBD"
-            },
-            {
-              pub_name: "The Local Pub",
-              lat: -37.8186,
-              lon: 144.9621,
-              price: 11.50,
-              beer_name: "Craft Pale Ale",
-              size: "Pint",
-              location: "123 Main St, CBD"
-            },
-            
-            // Another pub with multiple entries
-            {
-              pub_name: "Laneway Bar",
-              lat: -37.8149,
-              lon: 144.9638,
-              price: 9.00,
-              beer_name: "Victoria Bitter",
-              size: "Pint",
-              location: "23 Laneway, CBD"
-            },
-            {
-              pub_name: "Laneway Bar",
-              lat: -37.8149,
-              lon: 144.9638,
-              price: 7.50,
-              beer_name: "Guinness",
-              size: "Schooner",
-              location: "23 Laneway, CBD"
-            },
-            
-            // Pubs with single entries
-            {
-              pub_name: "Riverside Bar",
-              lat: -37.8132,
-              lon: 144.9523,
-              price: 11.00,
-              beer_name: "Heineken",
-              size: "Pint",
-              location: "45 River St, Southbank"
-            },
-            {
-              pub_name: "The Beer Garden",
-              lat: -37.8118,
-              lon: 144.9725,
-              price: 10.50,
-              beer_name: "James Squire Pale Ale",
-              size: "Pint",
-              location: "78 Garden Ave, Richmond"
-            },
-            {
-              pub_name: "Harbor View Pub",
-              lat: -37.8221,
-              lon: 144.9488,
-              price: 12.00,
-              beer_name: "Little Creatures",
-              size: "Pint",
-              location: "99 Docklands Dr, Docklands"
-            },
-          ];
-          
-          console.log(`Fetched ${allPrices.length} price records`);
-
-          // Group prices by pub location using a unique key
-          const pubData = {};
-          
-          allPrices.forEach(item => {
-            // Create a unique key for each pub location
-            // Use pub name + lat/lon to ensure uniqueness
-            const key = `${item.pub_name}_${item.lat.toFixed(6)}_${item.lon.toFixed(6)}`;
-            
-            if (!pubData[key]) {
-              pubData[key] = {
-                name: item.pub_name,
-                lat: item.lat,
-                lon: item.lon,
-                location: item.location,
-                beers: []  // Store beer details here
-              };
-            }
-            // Add beer to this pub
-            pubData[key].beers.push({
-              name: item.beer_name,
-              size: item.size,
-              price: item.price
-            });
-          });
-
-          // Calculate aggregates for each pub
-          const pubs = Object.values(pubData).map(pub => {
-            const prices = pub.beers.map(b => b.price);
-            const sorted = [...prices].sort((a, b) => a - b);
-            
-            return {
-              ...pub,
-              min: sorted[0],
-              max: sorted[sorted.length - 1],
-              avg: prices.reduce((sum, price) => sum + price, 0) / prices.length,
-              key: `${pub.name}_${pub.lat.toFixed(6)}_${pub.lon.toFixed(6)}` // Generate ID
-            };
-          });
-
-          // Create markers for each pub
-          pubs.forEach(pub => {
-            const displayValue = {
-              min: pub.min,
-              avg: pub.avg,
-              max: pub.max
-            }[view];
-            
-            const marker = L.marker([pub.lat, pub.lon]).addTo(mainMap);
-            
-            // Show price as tooltip
-            marker.bindTooltip(`$${displayValue.toFixed(2)}`, {
-              permanent: true,
-              direction: "top",
-              className: "cheap-label"
-            });
-            
-            /** =========================================
-             *  FIXED: Bind pub details to marker with unique ID
-             * ========================================= */
-            marker.pubData = pub;
-            
-            // Add click handler to show details
-            marker.on("click", () => showPubDetails(marker));
-            markers.push(marker);
+          // Show beer price as tooltip
+          marker.bindTooltip(`$${beer.price.toFixed(2)}`, {
+            permanent: true,
+            direction: "top",
+            className: "cheap-label"
           });
           
-          console.log(`Added ${markers.length} markers`);
-        } catch (err) {
-          console.error("Marker refresh error:", err);
-        }
+          // Store pub data with marker for popup
+          marker.pubData = pub;
+          marker.beerSize = currentSize; 
+          
+          // Add click handler to show details
+          marker.on("click", () => showPubDetails(marker));
+          
+          markers.push(marker);
+        });
       }
-
+      
       /** =========================================
-       *  SHOW PUB DETAILS FUNCTION (FIXED)
-       * 
-       * Now uses the unique pub ID to ensure correct data
+       *  SHOW PUB DETAILS FUNCTION
        * ========================================= */
       function showPubDetails(marker) {
-        try {
-          const pub = marker.pubData;
-          if (!pub) return;
-          
-          console.log(`Opening details for: ${pub.name}`);
-          
-          // Generate table of beer prices sorted by price
-          const sortedBeers = [...pub.beers].sort((a, b) => a.price - b.price);
-          
-          const beerRows = sortedBeers.map(beer => `
+        const pub = marker.pubData;
+        
+        // Get beers for the selected size
+        const filteredBeers = pub.beers.filter(
+          beer => beer.size === marker.beerSize
+        ).sort((a, b) => a.price - b.price);
+        
+        let beersHtml = "";
+        
+        filteredBeers.forEach(beer => {
+          beersHtml += `
             <tr>
               <td>${beer.name}</td>
               <td>${beer.size}</td>
               <td class="beer-price">$${beer.price.toFixed(2)}</td>
             </tr>
-          `).join("");
-          
-          // Create popup content
-          const html = `
-            <div>
-              <div class="pub-header">
-                <h3>${pub.name}</h3>
-                <p>${pub.location}</p>
-              </div>
-              <table class="beer-table">
-                <thead>
-                  <tr>
-                    <th>Beer</th>
-                    <th>Size</th>
-                    <th class="beer-price">Price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${beerRows}
-                </tbody>
-              </table>
-              <div class="last-updated">
-                Updated: Today, 10:45 AM
-              </div>
-            </div>
           `;
-          
-          // Create and open popup
-          marker.bindPopup(html, { maxWidth: 300 }).openPopup();
-        } catch (err) {
-          console.error("Pub details error:", err);
-        }
-      }
-
-      /** =========================================
-       *  ADD PUB MODAL FUNCTIONALITY
-       * ========================================= */
-      const addPubBtn = document.getElementById("add-pub-btn");
-      const addPubModal = document.getElementById("add-pub-modal");
-      const closeBtn = document.querySelector(".close");
-      const cancelBtn = document.getElementById("cancel-add");
-      const addBeerBtn = document.getElementById("add-another-beer");
-      const savePubBtn = document.getElementById("save-pub");
-      const beerList = document.querySelector(".beer-list");
-      
-      // Open modal
-      addPubBtn.addEventListener("click", () => {
-        addPubModal.style.display = "flex";
-      });
-      
-      // Close modal
-      const closeModal = () => {
-        addPubModal.style.display = "none";
-      };
-      
-      closeBtn.addEventListener("click", closeModal);
-      cancelBtn.addEventListener("click", closeModal);
-      
-      // Click outside modal to close
-      addPubModal.addEventListener("click", (e) => {
-        if (e.target === addPubModal) {
-          closeModal();
-        }
-      });
-      
-      // Add beer row
-      addBeerBtn.addEventListener("click", () => {
-        const newBeer = document.createElement("div");
-        newBeer.className = "beer-item";
-        newBeer.innerHTML = `
-          <div class="form-group">
-            <label>Beer Name</label>
-            <input type="text" class="beer-name" placeholder="Beer name">
-          </div>
-          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <div class="form-group" style="width: 60%;">
-              <label>Size</label>
-              <select class="beer-size">
-                <option value="pint">Pint (568ml)</option>
-                <option value="pot">Pot (285ml)</option>
-                <option value="schooner">Schooner (425ml)</option>
-                <option value="bottle">Bottle</option>
-                <option value="can">Can</option>
-              </select>
+        });
+        
+        // Create popup content with "Add New Beer" option
+        const html = `
+          <div>
+            <div class="popup-header">
+              <h3>${pub.name}</h3>
+              <p>${pub.location}</p>
             </div>
-            <div class="form-group" style="width: 40%;">
-              <label>Price (AUD)</label>
-              <input type="number" min="0" step="0.01" class="beer-price" placeholder="0.00">
+            <table class="beer-table">
+              <thead>
+                <tr>
+                  <th>Beer</th>
+                  <th>Size</th>
+                  <th class="beer-price">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${beersHtml}
+              </tbody>
+            </table>
+            <div class="popup-actions">
+              <button class="btn btn-outline">Directions</button>
+              <button class="btn btn-primary" id="add-beer-btn">Add New Beer</button>
             </div>
           </div>
         `;
-        beerList.appendChild(newBeer);
-      });
-      
-      // Save pub data
-      savePubBtn.addEventListener("click", () => {
-        const name = document.getElementById("pub-name").value;
-        const address = document.getElementById("pub-address").value;
         
-        if (!name || !address) {
-          alert("Please enter pub name and address.");
-          return;
-        }
+        // Create and open popup
+        const popup = L.popup({ maxWidth: 320 })
+          .setLatLng([pub.lat, pub.lon])
+          .setContent(html);
         
-        // Get beer data
-        const beerElements = document.querySelectorAll(".beer-item");
-        const beers = [];
+        mainMap.openPopup(popup);
         
-        beerElements.forEach(beerEl => {
-          const beerName = beerEl.querySelector(".beer-name").value;
-          const beerSize = beerEl.querySelector(".beer-size").value;
-          const beerPrice = parseFloat(beerEl.querySelector(".beer-price").value);
-          
-          if (beerName && !isNaN(beerPrice)) {
-            beers.push({
-              name: beerName,
-              size: beerSize,
-              price: beerPrice
+        // Add event listener for the "Add New Beer" button
+        setTimeout(() => {
+          const addBeerBtn = document.getElementById("add-beer-btn");
+          if (addBeerBtn) {
+            addBeerBtn.addEventListener("click", () => {
+              showBeerForm(pub);
             });
           }
-        });
+        }, 10);
+      }
+      
+      /** =========================================
+       *  ADD NEW BEER FUNCTIONALITY
+       * ========================================= */
+      function showBeerForm(pub) {
+        alert(`Now adding a new beer to ${pub.name}...\n\nIn a real application, this would open a form to submit new beer data to your database.`);
         
-        if (beers.length === 0) {
-          alert("Please add at least one beer.");
-          return;
-        }
+        // Simulate adding a new beer
+        const newBeer = {
+          name: `Seasonal ${Math.floor(Math.random() * 10) + 1}`,
+          size: currentSize,
+          price: (Math.random() * 5 + 8).toFixed(2)
+        };
         
-        // For demo, we're not actually sending to Supabase
-        // In a real app, this would submit to your Supabase database
+        pub.beers.push(newBeer);
+        alert(`Added new beer: ${newBeer.name} (${newBeer.size}) for $${newBeer.price}`);
         
-        console.log("Saving new pub:");
-        console.log("Name:", name);
-        console.log("Address:", address);
-        console.log("Beers:", beers);
-        
-        alert("Pub added successfully! (demo)");
-        
-        // If this was real, we'd:
-        // 1. Add pub to database
-        // 2. Add beers to database
-        // 3. Close modal
-        // 4. Refresh markers: refreshMarkers(currentView)
-        
-        closeModal();
+        // Refresh the view
+        refreshMarkers();
+      }
+      
+      /** =========================================
+       *  ADD PUB FUNCTIONALITY
+       * ========================================= */
+      const addPubBtn = document.getElementById("add-pub-btn");
+      
+      addPubBtn.addEventListener("click", () => {
+        alert("Now creating new pub entry...\n\nIn a real application, this would open a form to add a new pub location and its beers.");
       });
-
+      
       /** =========================================
        *  INITIALIZE THE APPLICATION
        * ========================================= */
-      // Initial load - show cheapest beers
-      await refreshMarkers("min");
+      // Load simulated data
+      await loadSimulatedData();
       
-      // Handle view selector change
-      document.getElementById("view-select").addEventListener("change", (e) => {
-        refreshMarkers(e.target.value);
+      // Initialize the view
+      refreshMarkers();
+      
+      // Close search results when clicking elsewhere
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest('.search-bar')) {
+          searchResults.style.display = "none";
+        }
       });
 
       console.log("BeerSpy application ready");
