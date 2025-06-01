@@ -12,7 +12,7 @@
   />
 
   <style>
-    /* Make the map fill the viewport (adjust as you like) */
+    /* Ensure the map container has height so Leaflet can render */
     #map {
       height: 100vh;
       width: 100%;
@@ -27,7 +27,7 @@
       background: white;
       padding: 0.5rem;
       border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
       font-family: sans-serif;
     }
     #view-container label {
@@ -37,9 +37,9 @@
       font-size: 1rem;
     }
 
-    /* Temporary styling for marker tooltips */
+    /* Styling for the price tooltip on markers */
     .cheap-label {
-      background: rgba(255,255,255,0.8);
+      background: rgba(255, 255, 255, 0.8);
       border-radius: 2px;
       padding: 2px 4px;
       font-size: 0.9rem;
@@ -49,7 +49,7 @@
   </style>
 </head>
 <body>
-  <!-- 1) A small container for the “view” dropdown -->
+  <!-- 1) “Show by” dropdown -->
   <div id="view-container">
     <label for="view-select">Show by:</label>
     <select id="view-select">
@@ -59,151 +59,17 @@
     </select>
   </div>
 
-  <!-- 2) The single map container -->
+  <!-- 2) Single map container -->
   <div id="map"></div>
 
-
-  <!-- 3) Load Leaflet JS -->
+  <!-- 3) Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <!-- 4) Load Supabase UMD bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
-  <!--    After this, `supabase.createClient` is available.  -->
+  <!-- 4) Supabase UMD bundle -->
+  <script src="https://unpkg.com/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+  <!-- After this, `window.supabase.createClient` is available. -->
 
-  <!-- 5) Our main application script -->
-  <script>
-    (async () => {
-      // ───────────────────────────────────────────
-      // A) CONFIGURE Supabase client (UMD style)
-      // ───────────────────────────────────────────
-      const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";
-      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; 
-      // ─── Replace the above with your real anon key ───
-
-      // Create a global supabase object
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      // ───────────────────────────────────────────
-      // B) INITIALIZE the Leaflet map (only one #map)
-      // ───────────────────────────────────────────
-      const mainMap = L.map("map").setView([-37.8136, 144.9631], 12);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors"
-      }).addTo(mainMap);
-
-      // A place to keep track of all current Leaflet markers
-      let markers = [];
-
-      // ───────────────────────────────────────────
-      // C) FUNCTION: Refresh markers according to “view” (min/avg/max)
-      // ───────────────────────────────────────────
-      async function refreshMarkers(view = "min") {
-        // 1) Remove existing markers
-        markers.forEach(m => m.remove());
-        markers = [];
-
-        // 2) Pick the right aggregate and alias
-        let agg, alias;
-        if (view === "min")    { agg = "MIN(price)"; alias = "cheapest_price"; }
-        if (view === "avg")    { agg = "AVG(price)"; alias = "avg_price"; }
-        if (view === "max")    { agg = "MAX(price)"; alias = "expensive_price"; }
-
-        // 3) Query Supabase (grouped by pub_name, lat, lon)
-        const { data: pubsData, error } = await supabase
-          .from("beer_prices")
-          .select(`pub_name, lat, lon, ${agg} as ${alias}`)
-          .group("pub_name, lat, lon");
-
-        if (error) {
-          console.error("Could not load pubs:", error);
-          return;
-        }
-
-        // 4) For each pub, add a marker with a permanent tooltip
-        pubsData.forEach(pub => {
-          const priceVal = pub[alias];
-          const m = L.marker([pub.lat, pub.lon]).addTo(mainMap);
-
-          // Show the price as a permanent tooltip hovering above the pin
-          m.bindTooltip(
-            `$${priceVal.toFixed(2)}`,
-            {
-              permanent: true,
-              direction: "top",
-              className: "cheap-label"
-            }
-          );
-
-          // On click, fetch & show full details for that pub
-          m.on("click", () => showPubDetails(pub.pub_name, pub.lat, pub.lon));
-          markers.push(m);
-        });
-      }
-
-      // ───────────────────────────────────────────
-      // D) FUNCTION: On marker click, show a popup with ALL beer‐entries for that pub
-      // ───────────────────────────────────────────
-      async function showPubDetails(pubName, lat, lon) {
-        // 1) Fetch every row for this pub_name
-        const { data: beers, error } = await supabase
-          .from("beer_prices")
-          .select("beer_name, size, price, location, last_updated")
-          .eq("pub_name", pubName);
-
-        if (error || !beers || beers.length === 0) {
-          console.error("Failed to load details for", pubName, error);
-          return;
-        }
-
-        // 2) Build HTML for the popup
-        let html = `<div style="min-width:180px; font-family:sans-serif">
-          <strong>${pubName}</strong><br>`;
-        // Show location (assuming it’s the same for all rows)
-        html += `<em>${beers[0].location || ""}</em><br><hr>`;
-
-        html += `<table style="width:100%; font-size:0.9rem; border-collapse:collapse">
-            <thead>
-              <tr>
-                <th style="text-align:left">Beer</th>
-                <th style="text-align:left">Size</th>
-                <th style="text-align:right">Price</th>
-              </tr>
-            </thead>
-            <tbody>`;
-
-        beers.forEach(b => {
-          html += `<tr>
-            <td>${b.beer_name}</td>
-            <td>${b.size}</td>
-            <td style="text-align:right">$${b.price.toFixed(2)}</td>
-          </tr>`;
-        });
-
-        html += `</tbody></table><br>`;
-        html += `<small>Last updated: ${new Date(
-          beers[0].last_updated
-        ).toLocaleDateString()}</small></div>`;
-
-        // 3) Create or reuse a popup at the same coordinates
-        L.popup({ maxWidth: 240 })
-          .setLatLng([lat, lon])
-          .setContent(html)
-          .openOn(mainMap);
-      }
-
-      // ───────────────────────────────────────────
-      // E) ON INITIAL LOAD: draw the “cheapest” view by default
-      // ───────────────────────────────────────────
-      await refreshMarkers("min");
-
-      // ───────────────────────────────────────────
-      // F) HOOK UP the “view” dropdown to re‐draw markers
-      // ───────────────────────────────────────────
-      const viewSelect = document.getElementById("view-select");
-      viewSelect.addEventListener("change", () => {
-        refreshMarkers(viewSelect.value);
-      });
-    })();
-  </script>
+  <!-- 5) Your custom JavaScript file -->
+  <script src="script.js"></script>
 </body>
 </html>
