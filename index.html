@@ -6,10 +6,7 @@
   <title>BeerSpy Map</title>
 
   <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
   <style>
     /* Ensure the map container has height so Leaflet can render */
@@ -49,7 +46,6 @@
   </style>
 </head>
 <body>
-  <!-- 1) “Show by” dropdown -->
   <div id="view-container">
     <label for="view-select">Show by:</label>
     <select id="view-select">
@@ -59,176 +55,108 @@
     </select>
   </div>
 
-  <!-- 2) Single map container -->
   <div id="map"></div>
 
-  <!-- 3) Leaflet JS -->
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <!-- 4) Supabase UMD bundle -->
-  <script src="https://unpkg.com/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
-  <!-- After this, `window.supabase.createClient` is available. -->
-
-  <!-- 5) Your custom JavaScript file -->
+  
+  <!-- Supabase client -->
   <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/+esm';
-
-  const supabase = createClient('https://your-project.supabase.co', 'your-anon-key');
-
-  // script.js
-
-  document.addEventListener("DOMContentLoaded", async () => {
-    // ─────────────────────────────────────────────────────────
-    // A) CONFIGURE Supabase client (UMD style)
-    // ─────────────────────────────────────────────────────────
+    // REPLACE THESE WITH YOUR ACTUAL SUPABASE DETAILS
     const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
 
-    // ==== PASTE YOUR ACTUAL ANON KEY HERE (no ellipsis) ====
-    const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-      + ".eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0"
-      + ".eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";
-    // ======================================================
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Initialize map
+      const map = L.map("map").setView([-37.8136, 144.9631], 12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
 
-    // Create a Supabase client and store it in sbClient
-    // (avoid shadowing global "supabase")
-    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      let markers = [];
 
-    // ─────────────────────────────────────────────────────────
-    // B) INITIALIZE Leaflet map (one #map)
-    // ─────────────────────────────────────────────────────────
-    const mainMap = L.map("map").setView([-37.8136, 144.9631], 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(mainMap);
+      // Fetch data from Supabase
+      async function getBeerData(viewType) {
+        const { data, error } = await fetch(`${SUPABASE_URL}/rest/v1/beer_prices?select=*`, {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+          }
+        }).then(res => res.json());
 
-    // Keep references to current markers so we can clear them on view‐change
-    let markers = [];
-
-    // ─────────────────────────────────────────────────────────
-    // C) FUNCTION: Refresh markers based on selected “view” (min/avg/max)
-    // ─────────────────────────────────────────────────────────
-    async function refreshMarkers(view = "min") {
-      // 1) Remove any existing markers
-      markers.forEach((m) => m.remove());
-      markers = [];
-
-      // 2) Decide which aggregate to use
-      let agg, alias;
-      if (view === "min") {
-        agg = "MIN(price)";
-        alias = "cheapest_price";
-      }
-      if (view === "avg") {
-        agg = "AVG(price)";
-        alias = "avg_price";
-      }
-      if (view === "max") {
-        agg = "MAX(price)";
-        alias = "expensive_price";
+        if (error) {
+          console.error("Supabase error:", error);
+          return [];
+        }
+        return data;
       }
 
-      // 3) Query Supabase (grouped by pub_name, lat, lon)
-      const { data: pubsData, error } = await sbClient
-        .from("beer_prices")
-        .select(`pub_name, lat, lon, ${agg} as ${alias}`)
-        .group("pub_name, lat, lon");
+      // Process data and show markers
+      async function refreshMarkers(view = "min") {
+        // Clear existing markers
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
 
-      if (error) {
-        console.error("Could not load pubs:", error);
-        return;
-      }
+        const beerData = await getBeerData(view);
+        if (!beerData) return;
 
-      // 4) Add a marker for each pub
-      pubsData.forEach((pub) => {
-        const priceVal = pub[alias];
-        const m = L.marker([pub.lat, pub.lon]).addTo(mainMap);
-
-        // Show the price as a permanent tooltip
-        m.bindTooltip(`$${priceVal.toFixed(2)}`, {
-          permanent: true,
-          direction: "top",
-          className: "cheap-label",
+        // Group data by pub
+        const pubs = {};
+        beerData.forEach(item => {
+          const key = `${item.pub_name}-${item.lat}-${item.lon}`;
+          if (!pubs[key]) {
+            pubs[key] = {
+              name: item.pub_name,
+              lat: item.lat,
+              lon: item.lon,
+              prices: []
+            };
+          }
+          pubs[key].prices.push(item.price);
         });
 
-        // When clicked, show full details for that pub
-        m.on("click", () =>
-          showPubDetails(pub.pub_name, pub.lat, pub.lon)
-        );
+        // Calculate price metrics
+        Object.values(pubs).forEach(pub => {
+          pub.min = Math.min(...pub.prices);
+          pub.avg = pub.prices.reduce((a, b) => a + b, 0) / pub.prices.length;
+          pub.max = Math.max(...pub.prices);
+        });
 
-        markers.push(m);
-      });
-    }
+        // Add markers to map
+        Object.values(pubs).forEach(pub => {
+          const price = pub[view];
+          const marker = L.marker([pub.lat, pub.lon]).addTo(map);
+          
+          marker.bindTooltip(`$${price.toFixed(2)}`, {
+            permanent: true,
+            className: "cheap-label"
+          });
 
-    // ─────────────────────────────────────────────────────────
-    // D) FUNCTION: On marker click, show a popup with ALL beer entries for that pub
-    // ─────────────────────────────────────────────────────────
-    async function showPubDetails(pubName, lat, lon) {
-      // 1) Fetch every row for this pub_name
-      const { data: beers, error } = await sbClient
-        .from("beer_prices")
-        .select("beer_name, size, price, location, last_updated")
-        .eq("pub_name", pubName);
+          marker.on("click", () => {
+            // Show pub details popup
+            const content = `
+              <div style="max-width: 300px">
+                <h3>${pub.name}</h3>
+                <p><b>Cheapest:</b> $${pub.min.toFixed(2)}</p>
+                <p><b>Average:</b> $${pub.avg.toFixed(2)}</p>
+                <p><b>Most Expensive:</b> $${pub.max.toFixed(2)}</p>
+              </div>
+            `;
+            marker.bindPopup(content).openPopup();
+          });
 
-      if (error || !beers || beers.length === 0) {
-        console.error("Failed to load details for", pubName, error);
-        return;
+          markers.push(marker);
+        });
       }
 
-      // 2) Build HTML for the popup
-      let html = `<div style="min-width:180px; font-family:sans-serif">
-        <strong>${pubName}</strong><br>
-        <em>${beers[0].location || ""}</em><br><hr>`;
+      // Initial load
+      await refreshMarkers("min");
 
-      html += `<table style="width:100%; font-size:0.9rem; border-collapse:collapse">
-          <thead>
-            <tr>
-              <th style="text-align:left">Beer</th>
-              <th style="text-align:left">Size</th>
-              <th style="text-align:right">Price</th>
-            </tr>
-          </thead>
-          <tbody>`;
-
-      beers.forEach((b) => {
-        html += `<tr>
-            <td>${b.beer_name}</td>
-            <td>${b.size}</td>
-            <td style="text-align:right">$${b.price.toFixed(2)}</td>
-          </tr>`;
-      });
-
-      html += `</tbody></table><br>`;
-      html += `<small>Last updated: ${new Date(
-        beers[0].last_updated
-      ).toLocaleDateString()}</small></div>`;
-
-      // 3) Open a Leaflet popup at [lat, lon]
-      L.popup({ maxWidth: 240 })
-        .setLatLng([lat, lon])
-        .setContent(html)
-        .openOn(mainMap);
-    }
-
-    // ─────────────────────────────────────────────────────────
-    // E) ON INITIAL LOAD: catch errors from refreshMarkers
-    // ─────────────────────────────────────────────────────────
-    try {
-      await refreshMarkers("min"); // default to “cheapest” view
-    } catch (err) {
-      console.error("refreshMarkers threw an error:", err);
-    }
-
-    // ─────────────────────────────────────────────────────────
-    // F) HOOK UP the “view” dropdown to re‐draw markers
-    // ─────────────────────────────────────────────────────────
-    document
-      .getElementById("view-select")
-      .addEventListener("change", (e) => {
+      // Dropdown change handler
+      document.getElementById("view-select").addEventListener("change", (e) => {
         refreshMarkers(e.target.value);
       });
-  });
-
-</script>
+    });
+  </script>
 </body>
 </html>
