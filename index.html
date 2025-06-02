@@ -547,7 +547,61 @@
         .btn-submit:hover {
             background: var(--accent-dark);
         }
-        
+                .search-results {
+            position: absolute;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border-radius: 0 0 4px 4px;
+            margin-top: 1px;
+            display: none;
+            z-index: 1001;
+        }
+
+        .search-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-item:hover {
+            background: #f1f5f9;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item .place-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 2px;
+        }
+
+        .search-item .place-address {
+            font-size: 0.9em;
+            color: var(--text-medium);
+        }
+
+        .search-item .place-type {
+            font-size: 0.8em;
+            color: var(--secondary);
+            margin-top: 2px;
+            font-style: italic;
+        }
+
+        .existing-pub-indicator {
+            background: #e8f5e8;
+            border-left: 3px solid #27ae60;
+        }
+
+        .new-location-indicator {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
         .search-geocode {
             margin-top: 5px;
             display: flex;
@@ -652,14 +706,14 @@
         <div id="map-container">
             <div id="map"></div>
             
-            <!-- Search Bar -->
+          <!-- Update the search container in your HTML -->
             <div class="search-container">
                 <div class="search-bar">
-                    <input type="text" id="pub-search" placeholder="Search pubs by name or address...">
+                    <input type="text" id="pub-search" placeholder="Search places in Melbourne...">
                     <button class="search-btn"><i class="fas fa-search"></i></button>
                 </div>
                 <div class="search-results" id="search-results">
-                    <!-- Search results will appear here -->
+                    <!-- Live search results will appear here -->
                 </div>
             </div>
         </div>
@@ -806,7 +860,7 @@
     
     <!-- Footer -->
     <footer>
-        <p>BeerSpy alpha v0.0.9&copy; 2025</p>
+        <p>BeerSpy alpha v0.0.13&copy; 2025</p>
     </footer>
 
      
@@ -849,6 +903,8 @@
       // Current beer size filter
       let currentSize = "pint";
       let markers = [];
+      let searchTimeout;
+
 
       setupEventListeners();
       fetchBeerPrices();
@@ -1320,55 +1376,185 @@
         }
 
         // Search input handler
+// Enhanced search input handler with live geocoding
         const searchInput = document.getElementById("pub-search");
         const resultsDiv = document.getElementById("search-results");
-        
+
         if (searchInput && resultsDiv) {
-          searchInput.addEventListener("input", function (e) {
-            const query = e.target.value.trim().toLowerCase();
-
-            if (query.length < 3) {
-              resultsDiv.style.display = "none";
-              return;
+        searchInput.addEventListener("input", function (e) {
+            const query = e.target.value.trim();
+            
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+            resultsDiv.style.display = "none";
+            return;
             }
-
-            const results = pubs.filter(
-              (pub) =>
-                pub.name.toLowerCase().includes(query) ||
-                pub.address.toLowerCase().includes(query)
-            );
-
-            if (results.length > 0) {
-              resultsDiv.innerHTML = results
-                .slice(0, 5)
-                .map(
-                  (pub) => `
-                <div class="search-item" data-id="${pub.id}">
-                  <div style="font-weight:600">${pub.name}</div>
-                  <div style="font-size:0.9em;opacity:0.8">${pub.address}</div>
-                </div>`
-                )
-                .join("");
-              resultsDiv.style.display = "block";
-
-              document.querySelectorAll(".search-item").forEach((item) => {
-                item.addEventListener("click", function () {
-                  const pubId = parseInt(this.dataset.id);
-                  const pub = pubs.find((pub) => pub.id === pubId);
-                  if (pub) {
-                    map.setView([pub.lat, pub.lon], 16);
-                    resultsDiv.style.display = "none";
-                    searchInput.value = "";
-                  }
+            
+            // Debounce the search
+            searchTimeout = setTimeout(async () => {
+            try {
+                // First, search existing pubs
+                const existingResults = pubs.filter(
+                (pub) =>
+                    pub.name.toLowerCase().includes(query.toLowerCase()) ||
+                    pub.address.toLowerCase().includes(query.toLowerCase())
+                );
+                
+                // Then search for new places via geocoding
+                let geocodeResults = [];
+                if (query.length >= 3) {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Melbourne, Australia")}&limit=5&addressdetails=1&extratags=1`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    // Filter out locations that are too close to existing pubs
+                    geocodeResults = data.filter(place => {
+                    const lat = parseFloat(place.lat);
+                    const lon = parseFloat(place.lon);
+                    
+                    return !pubs.some(pub => 
+                        Math.abs(pub.lat - lat) < 0.001 && 
+                        Math.abs(pub.lon - lon) < 0.001
+                    );
+                    });
+                }
+                }
+                
+                // Combine and display results
+                let resultsHTML = '';
+                
+                // Show existing pubs first
+                if (existingResults.length > 0) {
+                resultsHTML += existingResults.slice(0, 3).map(pub => `
+                    <div class="search-item existing-pub-indicator" data-type="existing" data-lat="${pub.lat}" data-lon="${pub.lon}">
+                    <div class="place-name">${pub.name}</div>
+                    <div class="place-address">${pub.address}</div>
+                    <div class="place-type">Existing pub • ${pub.beers.length} beers listed</div>
+                    </div>
+                `).join('');
+                }
+                
+                // Show new locations
+                if (geocodeResults.length > 0) {
+                resultsHTML += geocodeResults.slice(0, 3).map(place => {
+                    const pubName = extractPubName(place);
+                    const placeType = getPlaceType(place);
+                    
+                    return `
+                    <div class="search-item new-location-indicator" 
+                        data-type="new" 
+                        data-lat="${place.lat}" 
+                        data-lon="${place.lon}"
+                        data-name="${pubName}"
+                        data-address="${place.display_name}"
+                        data-place-data='${JSON.stringify(place)}'>
+                        <div class="place-name">${pubName}</div>
+                        <div class="place-address">${place.display_name}</div>
+                        <div class="place-type">${placeType} • Click to add as new pub</div>
+                    </div>
+                    `;
+                }).join('');
+                }
+                
+                if (resultsHTML) {
+                resultsDiv.innerHTML = resultsHTML;
+                resultsDiv.style.display = "block";
+                
+                // Add click handlers
+                resultsDiv.querySelectorAll('.search-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                    const lat = parseFloat(this.dataset.lat);
+                    const lon = parseFloat(this.dataset.lon);
+                    const type = this.dataset.type;
+                    
+                    if (type === 'existing') {
+                        // Navigate to existing pub
+                        map.setView([lat, lon], 16);
+                        resultsDiv.style.display = "none";
+                        searchInput.value = "";
+                        
+                        // Optionally open the popup for this pub
+                        const marker = markers.find(m => 
+                        Math.abs(m.getLatLng().lat - lat) < 0.0001 && 
+                        Math.abs(m.getLatLng().lng - lon) < 0.0001
+                        );
+                        if (marker) {
+                        setTimeout(() => marker.fire('click'), 200);
+                        }
+                    } else {
+                        // Open "Add Pub" modal with pre-filled data
+                        const pubName = this.dataset.name;
+                        const address = this.dataset.address;
+                        
+                        // Pre-fill the add pub form
+                        document.getElementById("pub-name").value = pubName;
+                        document.getElementById("pub-address").value = address;
+                        document.getElementById("pub-lat").value = lat;
+                        document.getElementById("pub-lon").value = lon;
+                        
+                        // Show the modal
+                        const modal = document.getElementById("add-pub-modal");
+                        if (modal) {
+                        modal.style.display = "flex";
+                        map.setView([lat, lon], 16);
+                        }
+                        
+                        resultsDiv.style.display = "none";
+                        searchInput.value = "";
+                    }
+                    });
                 });
-              });
-            } else {
-              resultsDiv.innerHTML = '<div class="search-item">No matching pubs found</div>';
-              resultsDiv.style.display = "block";
+                } else {
+                resultsDiv.innerHTML = '<div class="search-item">No results found</div>';
+                resultsDiv.style.display = "block";
+                }
+                
+            } catch (error) {
+                console.error("Search error:", error);
+                resultsDiv.style.display = "none";
             }
-          });
+            }, 300);
+        });
+        
+        // Hide results when clicking outside
+        document.addEventListener("click", function(e) {
+            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.style.display = "none";
+            }
+        });
+        }
+        function extractPubName(placeData) {
+        if (placeData.name) return placeData.name;
+        
+        if (placeData.display_name) {
+            const parts = placeData.display_name.split(',');
+            return parts[0].trim();
+        }
+        
+        if (placeData.address) {
+            const addr = placeData.address;
+            if (addr.pub) return addr.pub;
+            if (addr.bar) return addr.bar;
+            if (addr.restaurant) return addr.restaurant;
+            if (addr.house_number && addr.road) {
+            return `${addr.house_number} ${addr.road}`;
+            }
+            if (addr.road) return addr.road;
+        }
+        
+        return 'Unknown Location';
         }
 
+        function getPlaceType(place) {
+        if (place.type === 'pub' || place.type === 'bar') return 'Pub/Bar';
+        if (place.class === 'amenity' && place.type === 'restaurant') return 'Restaurant';
+        if (place.class === 'tourism') return 'Tourism';
+        if (place.class === 'shop') return 'Shop';
+        return 'Location';
+        }
         // "Submit New Price" modal setup
         setupSubmitPriceModal();
       }
