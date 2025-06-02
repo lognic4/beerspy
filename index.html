@@ -1322,11 +1322,12 @@
         const beerMap = new Map();
         
         beers.forEach(beer => {
-            const existingBeer = beerMap.get(beer.name);
+            const key = `${beer.name}_${beer.size}`;
+            const existingBeer = beerMap.get(key);
             const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
             
             if (!existingBeer || beerTime > existingBeer.time) {
-            beerMap.set(beer.name, {
+            beerMap.set(key, {
                 beer: beer,
                 time: beerTime
             });
@@ -1358,8 +1359,8 @@
         const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         const lastUpdatedDate = mostRecentUpdate 
-        ? `${mostRecentUpdate.toLocaleDateString('en-AU', { timeZone })} at ${mostRecentUpdate.toLocaleTimeString('en-AU', { hour12: false, timeZone })}`
-        : `${new Date().toLocaleDateString('en-AU', { timeZone })} at ${new Date().toLocaleTimeString('en-AU', { hour12: false, timeZone })}`;
+        ? mostRecentUpdate.toLocaleString('en-AU', { hour12: false, timeZone })
+        : new Date().toLocaleString('en-AU', { hour12: false, timeZone });
 
         content += `
             </table>
