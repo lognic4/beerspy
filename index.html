@@ -1480,6 +1480,8 @@ if (searchInput && resultsDiv) {
         
         if (resultsHTML) {
           resultsDiv.innerHTML = resultsHTML;
+          console.log("📱 Results HTML:", resultsHTML); // ADD THIS LINE
+  console.log("📱 Results div display:", resultsDiv.style.display); // ADD THIS LINE
         resultsDiv.style.display = "block";
         resultsDiv.style.backgroundColor = "white"; // Force visibility
         resultsDiv.style.border = "2px solid red"; // Temporary debug border
