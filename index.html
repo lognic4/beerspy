@@ -1274,19 +1274,27 @@
         });
         markers = [];
 
-        pubs.forEach((pub) => {
-          const beersForSize = pub.beers.filter((beer) => beer.size === currentSize);
-          if (beersForSize.length === 0) return;
+        const beerMap = new Map();
+            beersForSize.forEach(beer => {
+            const existingBeer = beerMap.get(beer.name);
+            const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
+            
+            if (!existingBeer || beerTime > existingBeer.time) {
+                beerMap.set(beer.name, {
+                beer: beer,
+                time: beerTime
+                });
+            }
+            });
 
-          const minPrice = Math.min(...beersForSize.map((beer) => beer.price));
-          const marker = L.marker([pub.lat, pub.lon], {
-            icon: createCustomIcon(minPrice),
-          }).addTo(map);
+            // Get the most recent prices and find the minimum among those
+            const mostRecentPrices = Array.from(beerMap.values()).map(item => item.beer.price);
+            const minRecentPrice = Math.min(...mostRecentPrices);
 
-          marker.pubData = pub;
-          marker.on("click", onMarkerClick);
-          markers.push(marker);
-        });
+            const marker = L.marker([pub.lat, pub.lon], {
+            icon: createCustomIcon(minRecentPrice),
+            }).addTo(map);
+
 
         updateStatistics();
       }
@@ -1559,10 +1567,30 @@
         </div>
     `;
 
-    // Populate the beer dropdown
-    populateBeerDropdown();
+    // Populate with beers from THIS pub only
+    populateBeerDropdownForPub(pub);
     
     submitPriceModal.style.display = "flex";
+    }
+
+    // New function to populate dropdown with pub-specific beers
+    function populateBeerDropdownForPub(pub) {
+    const beerSelect = document.getElementById("existing-beer-select");
+    if (!beerSelect) return;
+
+    // Get unique beer names from this specific pub
+    const uniqueBeersAtThisPub = [...new Set(pub.beers.map(beer => beer.name))];
+    
+    // Clear existing options except the first one
+    beerSelect.innerHTML = '<option value="">-- Select a beer --</option>';
+    
+    // Add beer options from this pub only
+    uniqueBeersAtThisPub.forEach(beerName => {
+        const option = document.createElement("option");
+        option.value = beerName;
+        option.textContent = beerName;
+        beerSelect.appendChild(option);
+    });
     }
 
     async function populateBeerDropdown() {
