@@ -1432,7 +1432,7 @@
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Melbourne, Australia")}&limit=3&addressdetails=1&extratags=1`,
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Victoria, Australia")}&limit=2&addressdetails=1&extratags=1`
                 ];
-                const response = await fetch(url);
+                const response = await fetch(urs);
                 const data = await response.json();
                 
                 if (data && data.length > 0) {
