@@ -692,6 +692,45 @@
                 font-size: 1.1rem;
             }
         }
+
+        .days-filter {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.day-btn {
+    padding: 8px 4px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    color: var(--text-dark);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.day-btn:hover, 
+.day-btn.active {
+    background: var(--secondary);
+    color: white;
+    border-color: var(--secondary);
+}
+
+/* Mobile optimization */
+@media (max-width: 767px) {
+    .days-filter {
+        gap: 4px;
+    }
+    
+    .day-btn {
+        padding: 10px 2px;
+        font-size: 0.8rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -874,16 +913,16 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="happy-hour-days">Days</label>
-                        <select id="happy-hour-days" multiple>
-                            <option value="monday">Monday</option>
-                            <option value="tuesday">Tuesday</option>
-                            <option value="wednesday">Wednesday</option>
-                            <option value="thursday">Thursday</option>
-                            <option value="friday">Friday</option>
-                            <option value="saturday">Saturday</option>
-                            <option value="sunday">Sunday</option>
-                        </select>
+                        <label>Days</label>
+                        <div class="days-filter">
+                            <button type="button" class="day-btn" data-day="monday">Mon</button>
+                            <button type="button" class="day-btn" data-day="tuesday">Tue</button>
+                            <button type="button" class="day-btn" data-day="wednesday">Wed</button>
+                            <button type="button" class="day-btn" data-day="thursday">Thu</button>
+                            <button type="button" class="day-btn" data-day="friday">Fri</button>
+                            <button type="button" class="day-btn" data-day="saturday">Sat</button>
+                            <button type="button" class="day-btn" data-day="sunday">Sun</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -980,16 +1019,16 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="happy-hour-price-days">Days</label>
-                        <select id="happy-hour-price-days" multiple>
-                            <option value="monday">Monday</option>
-                            <option value="tuesday">Tuesday</option>
-                            <option value="wednesday">Wednesday</option>
-                            <option value="thursday">Thursday</option>
-                            <option value="friday">Friday</option>
-                            <option value="saturday">Saturday</option>
-                            <option value="sunday">Sunday</option>
-                        </select>
+                        <label>Days</label>
+                        <div class="days-filter">
+                            <button type="button" class="day-btn" data-day="monday">Mon</button>
+                            <button type="button" class="day-btn" data-day="tuesday">Tue</button>
+                            <button type="button" class="day-btn" data-day="wednesday">Wed</button>
+                            <button type="button" class="day-btn" data-day="thursday">Thu</button>
+                            <button type="button" class="day-btn" data-day="friday">Fri</button>
+                            <button type="button" class="day-btn" data-day="saturday">Sat</button>
+                            <button type="button" class="day-btn" data-day="sunday">Sun</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1818,6 +1857,11 @@
                 return 'Location';
             }
         };
+        function getSelectedDays(containerSelector) {
+            const container = document.querySelector(containerSelector);
+            const activeDayButtons = container.querySelectorAll('.day-btn.active');
+            return Array.from(activeDayButtons).map(btn => btn.dataset.day);
+        }
 
         // =====================================
         // MODAL MANAGEMENT
@@ -1873,6 +1917,21 @@
 
                 // Setup address search
                 this.setupAddressSearch();
+                this.setupDayToggleButtons('#add-pub-modal');
+
+            },
+                        // Add this helper function to ModalManager
+            setupDayToggleButtons(containerSelector) {
+                const container = document.querySelector(containerSelector);
+                if (!container) return;
+                
+                const dayButtons = container.querySelectorAll('.day-btn');
+                dayButtons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        btn.classList.toggle('active');
+                    });
+                });
             },
 
             setupAddressSearch() {
@@ -2016,7 +2075,7 @@
                 const happyHourStart = document.getElementById("happy-hour-start").value;
                 const happyHourEnd = document.getElementById("happy-hour-end").value;
                 const happyHourDaysSelect = document.getElementById("happy-hour-days");
-                const happyHourDays = Array.from(happyHourDaysSelect.selectedOptions).map(opt => opt.value);
+                const happyHourDays = getSelectedDays('#submit-price-modal');
 
                 const newPub = {
                     id: appState.pubs.length + 1,
@@ -2094,6 +2153,8 @@
                         happyHourDetails.style.display = happyHourCheckbox.checked ? "block" : "none";
                     });
                 }
+                this.setupDayToggleButtons('#submit-price-modal');
+
             },
 
             openSubmitPriceModal(pub) {
@@ -2252,6 +2313,8 @@
                 });
             }
         };
+
+        
 
         // =====================================
         // APPLICATION INITIALIZATION
