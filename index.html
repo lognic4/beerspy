@@ -1505,29 +1505,24 @@
 
       // Open "Submit New Price" modal and populate beers
 
-        async function fetchUniqueBeerNames() {
-        try {
-            if (testMode) {
-            return ["Mega Beer", "Hoppy IPA", "Golden Ale", "IPA Special", "Stout"];
-            }
-
-            const { data, error } = await sbClient
-            .from("beer_prices")
-            .select("beer_name")
-            .order("beer_name");
-
-            if (error) {
-            console.error("Error fetching beer names:", error);
-            return [];
-            }
-
-            // Get unique beer names
-            const uniqueBeers = [...new Set(data.map(item => item.beer_name))];
-            return uniqueBeers;
-        } catch (err) {
-            console.error("Error fetching unique beer names:", err);
-            return [];
+    async function fetchUniqueBeerNames() {
+    try {
+        if (testMode) {
+        return ["Mega Beer", "Hoppy IPA", "Golden Ale", "IPA Special", "Stout"];
         }
+
+        // Fetch beer names from local pubs array
+        const beerNames = pubs.flatMap(pub => 
+        pub.beers.map(beer => beer.name)
+        );
+        
+        // Get unique beer names
+        const uniqueBeers = [...new Set(beerNames)];
+        return uniqueBeers;
+    } catch (err) {
+        console.error("Error fetching unique beer names:", err);
+        return [];
+    }
     }
 
     function openSubmitPriceModal(pub) {
