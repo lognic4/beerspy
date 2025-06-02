@@ -820,7 +820,7 @@
   console.log("Supabase client initialized", sbClient);
 
   // Dummy data for local testing if you want to run without Supabase
-  let testMode = false;
+  let testMode = true; // Enable test mode to see if buttons work
   if (testMode) {
     console.log("Running in test mode - using local data only");
   }
@@ -1108,22 +1108,13 @@
           });
         });
 
-        // Map click overlay to allow toggling markers
-        const mapOverlay = document.getElementById("map-overlay");
-        if (mapOverlay) {
-          mapOverlay.addEventListener("click", function () {
-            markers.forEach((marker) => {
-              try {
-                if (marker && marker.getPopup && marker.getPopup() && marker.getPopup().isOpen()) {
-                  marker.closePopup();
-                }
-              } catch (e) {
-                // Ignore errors if popup doesn't exist
-                console.log("Popup check error:", e);
-              }
-            });
-          });
-        }
+        // Map click to close popups (but don't block map interaction)
+        map.on('click', function(e) {
+          // Only close popups if we didn't click on a marker
+          if (!e.originalEvent.target.closest('.leaflet-marker-icon')) {
+            map.closePopup();
+          }
+        });
 
         // Modal controls for "Add Pub"
         const modal = document.getElementById("add-pub-modal");
@@ -1335,16 +1326,13 @@
         const beersForSize = pub.beers.filter((beer) => beer.size === currentSize);
 
         // Close any open popups first
-        markers.forEach((marker) => {
-          if (marker.getPopup && marker.getPopup().isOpen()) {
-            marker.closePopup();
-          }
-        });
+        map.closePopup();
 
         setTimeout(() => {
-          e.target
-            .bindPopup(createPopupContent(pub, beersForSize))
-            .openPopup();
+          const popup = L.popup()
+            .setLatLng([pub.lat, pub.lon])
+            .setContent(createPopupContent(pub, beersForSize))
+            .openOn(map);
         }, 50);
       }
 
@@ -1388,19 +1376,29 @@
 
       // Handle dynamic popup "Submit New Price" button
       map.on("popupopen", function (e) {
-        const popupContainer = e.popup.getElement();
-        if (!popupContainer) return;
-        
-        const contentNode = popupContainer.querySelector(".leaflet-popup-content");
-        if (!contentNode) return;
-        
-        const submitBtn = contentNode.querySelector(".add-beer-btn");
-        if (submitBtn && e.popup._source && e.popup._source.pubData) {
-          submitBtn.onclick = () => {
-            currentPubForPriceUpdate = e.popup._source.pubData;
-            openSubmitPriceModal(currentPubForPriceUpdate);
-          };
-        }
+        setTimeout(() => {
+          const popupContainer = e.popup.getElement();
+          if (!popupContainer) return;
+          
+          const contentNode = popupContainer.querySelector(".leaflet-popup-content");
+          if (!contentNode) return;
+          
+          const submitBtn = contentNode.querySelector(".add-beer-btn");
+          if (submitBtn) {
+            submitBtn.onclick = () => {
+              // Find the pub data from the popup position
+              const popupLatLng = e.popup.getLatLng();
+              const pub = pubs.find(p => 
+                Math.abs(p.lat - popupLatLng.lat) < 0.0001 && 
+                Math.abs(p.lon - popupLatLng.lng) < 0.0001
+              );
+              if (pub) {
+                currentPubForPriceUpdate = pub;
+                openSubmitPriceModal(currentPubForPriceUpdate);
+              }
+            };
+          }
+        }, 100);
       });
 
       // Variables for "Submit New Price" modal
