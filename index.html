@@ -260,6 +260,10 @@
             background: var(--secondary-dark);
         }
         
+        .search-results.show {
+            display: block !important;
+        }
+
         .search-results {
             position: absolute;
             width: 100%;
@@ -1397,7 +1401,7 @@ if (searchInput && resultsDiv) {
     
     if (query.length < 2) {
       console.log("Query too short, hiding results");
-      resultsDiv.style.display = "none";
+      resultsDiv.classList.remove('show');
       return;
     }
     
@@ -1482,7 +1486,7 @@ if (searchInput && resultsDiv) {
           resultsDiv.innerHTML = resultsHTML;
           console.log("📱 Results HTML:", resultsHTML); // ADD THIS LINE
   console.log("📱 Results div display:", resultsDiv.style.display); // ADD THIS LINE
-        resultsDiv.style.display = "block";
+        resultsDiv.classList.add('show');
         resultsDiv.style.backgroundColor = "white"; // Force visibility
         resultsDiv.style.border = "2px solid red"; // Temporary debug border
         resultsDiv.style.zIndex = "9999"; // Force to top
@@ -1497,7 +1501,7 @@ if (searchInput && resultsDiv) {
               if (type === 'existing') {
                 // Navigate to existing pub
                 map.setView([lat, lon], 16);
-                resultsDiv.style.display = "none";
+                resultsDiv.classList.remove('show');
                 searchInput.value = "";
                 
                 // Optionally open the popup for this pub
@@ -1547,7 +1551,7 @@ if (searchInput && resultsDiv) {
   // Hide results when clicking outside
   document.addEventListener("click", function(e) {
     if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
-      resultsDiv.style.display = "none";
+      resultsDiv.classList.remove('show');
     }
   });
   
