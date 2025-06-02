@@ -1039,18 +1039,26 @@
       // =====================================
       // EVENT HANDLERS & RENDERING
       // =====================================
-      function updateStatistics() {
+        function updateStatistics() {
         const totalPubs = pubs.length;
-        const totalBeers = pubs.reduce((total, pub) => total + pub.beers.length, 0);
+        
+        // Calculate unique beers across all pubs
+        const uniqueBeerNames = new Set();
+        pubs.forEach((pub) => {
+            pub.beers.forEach((beer) => {
+            uniqueBeerNames.add(beer.name);
+            });
+        });
+        const totalUniqueBeers = uniqueBeerNames.size;
 
         const prices = [];
         pubs.forEach((pub) => {
-          const beersForSize = pub.beers.filter((beer) => beer.size === currentSize);
-          beersForSize.forEach((beer) => prices.push(beer.price));
+            const beersForSize = pub.beers.filter((beer) => beer.size === currentSize);
+            beersForSize.forEach((beer) => prices.push(beer.price));
         });
 
         const avgPriceValue =
-          prices.length > 0
+            prices.length > 0
             ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
             : "N/A";
 
@@ -1059,9 +1067,9 @@
         const avgPriceElement = document.getElementById("avg-price");
 
         if (pubsCountElement) pubsCountElement.textContent = totalPubs;
-        if (beersCountElement) beersCountElement.textContent = uniqueBeers.size;
+        if (beersCountElement) beersCountElement.textContent = totalUniqueBeers;
         if (avgPriceElement) avgPriceElement.textContent = `$${avgPriceValue}`;
-      }
+        }
 
       function setupEventListeners() {
         // Size filter buttons
