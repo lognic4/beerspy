@@ -1113,8 +1113,13 @@
         if (mapOverlay) {
           mapOverlay.addEventListener("click", function () {
             markers.forEach((marker) => {
-              if (marker && marker.getPopup && marker.getPopup().isOpen()) {
-                marker.getPopup().close();
+              try {
+                if (marker && marker.getPopup && marker.getPopup() && marker.getPopup().isOpen()) {
+                  marker.closePopup();
+                }
+              } catch (e) {
+                // Ignore errors if popup doesn't exist
+                console.log("Popup check error:", e);
               }
             });
           });
