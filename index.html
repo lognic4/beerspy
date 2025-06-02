@@ -117,7 +117,27 @@
             height: 100%;
             background: var(--light-gray);
         }
-        
+        /*User location setup */
+
+        /* User location marker styles */
+        .user-location-marker {
+            background: none;
+            border: none;
+        }
+
+        .user-location-icon {
+            font-size: 20px;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+
         /* ======== Controls Section ======== */
         #map-controls {
             width: 100%;
@@ -888,23 +908,116 @@
   const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   console.log("Supabase client initialized");
 
-  // Dummy data for local testing if you want to run without Supabase
-  let testMode = false; // Enable test mode to see if buttons work
+  // Dummy data for local testing
+  let testMode = false;
   if (testMode) {
     console.log("Running in test mode - using local data only");
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  // =====================================
+  // MAP INITIALIZATION WITH LOCATION DETECTION
+  // =====================================
+  let map;
+  let userLocation = null;
+
+  async function initializeMap() {
+    // Default to Melbourne
+    let defaultLat = -37.8136;
+    let defaultLon = 144.9631;
+    let defaultZoom = 13;
+
+    try {
+      // Try to get user's location
+      const location = await getUserLocation();
+      if (location) {
+        userLocation = location;
+        defaultLat = location.lat;
+        defaultLon = location.lon;
+        defaultZoom = 14; // Zoom in more for user's actual location
+        console.log("Using user location:", location);
+      }
+    } catch (error) {
+      console.log("Using default Melbourne location:", error.message);
+    }
+
+    // Create map with determined coordinates
+    map = L.map("map").setView([defaultLat, defaultLon], defaultZoom);
+
+    // Add OpenStreetMap layer
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    // Add user location marker if we got GPS coordinates
+    if (userLocation && userLocation.source === 'gps') {
+      L.marker([userLocation.lat, userLocation.lon], {
+        icon: L.divIcon({
+          className: 'user-location-marker',
+          html: '<div class="user-location-icon">📍</div>',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        })
+      }).addTo(map).bindPopup("Your location");
+    }
+  }
+
+  async function getUserLocation() {
+    // First try GPS (more accurate)
+    if (navigator.geolocation) {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 5000,
+            enableHighAccuracy: true
+          });
+        });
+        
+        return {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+          source: 'gps'
+        };
+      } catch (gpsError) {
+        console.log("GPS failed, trying IP location:", gpsError.message);
+      }
+    }
+
+    // Fallback to IP-based location
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      
+      if (data.latitude && data.longitude) {
+        // Check if user is in Victoria/Melbourne area (rough bounds)
+        const lat = parseFloat(data.latitude);
+        const lon = parseFloat(data.longitude);
+        
+        // Victoria bounds: roughly -39.2 to -34.0 lat, 140.9 to 150.0 lon
+        if (lat >= -39.2 && lat <= -34.0 && lon >= 140.9 && lon <= 150.0) {
+          return {
+            lat: lat,
+            lon: lon,
+            source: 'ip',
+            city: data.city,
+            region: data.region
+          };
+        } else {
+          throw new Error(`Location outside Victoria: ${data.city}, ${data.region}`);
+        }
+      }
+    } catch (ipError) {
+      console.log("IP location failed:", ipError.message);
+    }
+
+    throw new Error("No location services available");
+  }
+
+  document.addEventListener("DOMContentLoaded", async function () {
     console.log("BeerSpy app initialized");
 
     try {
-      // Create map with Melbourne coordinates
-      const map = L.map("map").setView([-37.8136, 144.9631], 13);
-
-      // Add OpenStreetMap layer
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors",
-      }).addTo(map);
+      // Initialize map with location detection (this creates the map)
+      await initializeMap();
 
       // =====================================
       // DATA MANAGEMENT
@@ -916,9 +1029,10 @@
       let markers = [];
       let searchTimeout;
 
-
       setupEventListeners();
       fetchBeerPrices();
+
+      // ... rest of your existing code stays exactly the same
 
       // =====================================
       // MAP MARKER PLACEMENT
