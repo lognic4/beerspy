@@ -772,7 +772,7 @@
     
     <!-- Footer -->
     <footer>
-        <p>BeerSpy alpha v0.0.1&copy; 2025</p>
+        <p>BeerSpy alpha v0.0.9&copy; 2025</p>
     </footer>
 
      
@@ -1059,7 +1059,7 @@
         const avgPriceElement = document.getElementById("avg-price");
 
         if (pubsCountElement) pubsCountElement.textContent = totalPubs;
-        if (beersCountElement) beersCountElement.textContent = totalBeers;
+        if (beersCountElement) beersCountElement.textContent = uniqueBeers.size;
         if (avgPriceElement) avgPriceElement.textContent = `$${avgPriceValue}`;
       }
 
