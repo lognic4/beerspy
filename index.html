@@ -693,6 +693,38 @@
                 font-size: 1.1rem;
             }
         }
+        /* Happy hour price styling */
+        .beer-price.happy-hour {
+            background: #ff69b4;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        /* Time-based marker colors */
+        .price-bubble.recent {
+            background: #27ae60; /* Green for <1 week */
+        }
+
+        .price-bubble.average {
+            background: #3498db; /* Blue for average age */
+        }
+
+        .price-bubble.old {
+            background: #e74c3c; /* Red for >1 month */
+        }
+
+        .price-bubble.happy-hour {
+            background: #ff69b4; /* Pink for happy hour */
+            animation: pulse-pink 2s infinite;
+        }
+
+        @keyframes pulse-pink {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -881,6 +913,36 @@
                 <div class="form-group">
                     <label for="beer-price">Price (AUD) *</label>
                     <input type="number" id="beer-price" min="0" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="is-happy-hour"> This is a Happy Hour price!
+                    </label>
+                </div>
+
+                <div id="happy-hour-details" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="happy-hour-start">Start Time</label>
+                            <input type="time" id="happy-hour-start">
+                        </div>
+                        <div class="form-group">
+                            <label for="happy-hour-end">End Time</label>
+                            <input type="time" id="happy-hour-end">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="happy-hour-days">Days</label>
+                        <select id="happy-hour-days" multiple>
+                            <option value="monday">Monday</option>
+                            <option value="tuesday">Tuesday</option>
+                            <option value="wednesday">Wednesday</option>
+                            <option value="thursday">Thursday</option>
+                            <option value="friday">Friday</option>
+                            <option value="saturday">Saturday</option>
+                            <option value="sunday">Sunday</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1217,7 +1279,7 @@
           }
 
           // Insert new records
-          const newRecords = pub.beers.map((beer) => ({
+            const newRecords = pub.beers.map((beer) => ({
             pub_name: pub.name,
             beer_name: beer.name,
             size: beer.size,
@@ -1226,7 +1288,12 @@
             lon: pub.lon,
             location: pub.address,
             last_updated: new Date().toISOString(),
-          }));
+            // Add these new fields:
+            is_happy_hour: beer.is_happy_hour || false,
+            happy_hour_start: beer.happy_hour_start || null,
+            happy_hour_end: beer.happy_hour_end || null,
+            happy_hour_days: beer.happy_hour_days || null
+            }));
 
           const { error: insertError } = await sbClient
             .from("beer_prices")
@@ -1298,6 +1365,15 @@
             }
           });
         });
+        // Add this to setupEventListeners()
+        const isHappyHourCheckbox = document.getElementById("is-happy-hour");
+        const happyHourDetails = document.getElementById("happy-hour-details");
+
+        if (isHappyHourCheckbox && happyHourDetails) {
+            isHappyHourCheckbox.addEventListener("change", function() {
+                happyHourDetails.style.display = this.checked ? "block" : "none";
+            });
+        }
 
         // Map click to close popups (but don't block map interaction)
         map.on('click', function(e) {
@@ -1457,6 +1533,7 @@
               if (errorMessage) errorMessage.innerText = "Required form elements not found";
               return;
             }
+            
 
             const name = nameInput.value.trim();
             const address = addressInput.value.trim();
@@ -1465,7 +1542,23 @@
             const beerCategory = document.getElementById("beer-category").value;
             const beerSize = beerSizeInput.value;
             const beerPrice = parseFloat(beerPriceInput.value);
+            const isHappyHour = document.getElementById("is-happy-hour").checked;
+            const happyHourStart = document.getElementById("happy-hour-start").value;
+            const happyHourEnd = document.getElementById("happy-hour-end").value;
+            const happyHourDaysSelect = document.getElementById("happy-hour-days");
+            const happyHourDays = Array.from(happyHourDaysSelect.selectedOptions).map(opt => opt.value);
+
+            const beerData = { 
+                name: beerCategory, 
+                size: beerSize, 
+                price: beerPrice,
+                is_happy_hour: isHappyHour,
+                happy_hour_start: isHappyHour ? happyHourStart : null,
+                happy_hour_end: isHappyHour ? happyHourEnd : null,
+                happy_hour_days: isHappyHour ? happyHourDays : null
+            };
             
+
             if (errorMessage) errorMessage.innerText = "";
 
             if (!name) {
@@ -1491,7 +1584,7 @@
               address,
               lat: parseFloat(lat),
               lon: parseFloat(lon),
-              beers: [{ name: beerCategory, size: beerSize, price: beerPrice }],
+              beers: [beerData],
             };
 
             try {
@@ -1749,9 +1842,28 @@ document.addEventListener("click", function(e) {
             const mostRecentPrices = Array.from(beerMap.values()).map(item => item.beer.price);
             const minRecentPrice = Math.min(...mostRecentPrices);
 
-            const marker = L.marker([pub.lat, pub.lon], {
-            icon: createCustomIcon(minRecentPrice),
-            }).addTo(map);
+            const cheapestBeer = Array.from(beerMap.values())
+                        .find(item => item.beer.price === minRecentPrice);
+                    
+                    // Determine age class
+                    const now = new Date();
+                    const ageInDays = (now - cheapestBeer.time) / (1000 * 60 * 60 * 24);
+                    
+                    let ageClass;
+                    if (ageInDays <= 7) {
+                        ageClass = 'recent';
+                    } else if (ageInDays <= 30) {
+                        ageClass = 'average';
+                    } else {
+                        ageClass = 'old';
+                    }
+                    
+                    // Check if currently in happy hour
+                    const isCurrentlyHappyHour = checkIfCurrentlyHappyHour(cheapestBeer.beer);
+
+                    const marker = L.marker([pub.lat, pub.lon], {
+                        icon: createCustomIcon(minRecentPrice, ageClass, isCurrentlyHappyHour),
+                    }).addTo(map);
 
             marker.pubData = pub;
             marker.on("click", onMarkerClick);
@@ -1775,6 +1887,55 @@ document.addEventListener("click", function(e) {
             .openOn(map);
         }, 50);
       }
+
+        function createCustomIcon(price, ageClass, isCurrentlyHappyHour = false) {
+            const happyHourClass = isCurrentlyHappyHour ? ' happy-hour' : '';
+            
+            return L.divIcon({
+                className: "custom-marker",
+                html: `
+                    <div class="price-bubble ${ageClass}${happyHourClass}">$${price.toFixed(2)}</div>
+                    <div class="marker-arrow"></div>
+                `,
+                iconSize: [60, 60],
+                iconAnchor: [30, 60],
+            });
+        }
+
+        function checkIfCurrentlyHappyHour(beer) {
+            if (!beer.is_happy_hour || !beer.happy_hour_start || !beer.happy_hour_end || !beer.happy_hour_days) {
+                return false;
+            }
+            
+            const now = new Date();
+            const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();      
+            const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+            
+            // Check if today is a happy hour day
+            const dayNames = {
+                'sun': 'sunday', 'mon': 'monday', 'tue': 'tuesday', 'wed': 'wednesday',
+                'thu': 'thursday', 'fri': 'friday', 'sat': 'saturday'
+            };
+            
+            const fullDayName = dayNames[currentDay];
+            if (!beer.happy_hour_days.includes(fullDayName)) {
+                return false;
+            }
+            
+            // Parse happy hour times
+            const [startHour, startMin] = beer.happy_hour_start.split(':').map(Number);
+            const [endHour, endMin] = beer.happy_hour_end.split(':').map(Number);
+            const startTime = startHour * 60 + startMin;
+            const endTime = endHour * 60 + endMin;
+            
+            // Check if current time is within happy hour
+            if (startTime <= endTime) {
+                return currentTime >= startTime && currentTime <= endTime;
+            } else {
+                // Happy hour crosses midnight
+                return currentTime >= startTime || currentTime <= endTime;
+            }
+        }
 
       function createPopupContent(pub, beers) {
         let content = `
@@ -1810,13 +1971,17 @@ document.addEventListener("click", function(e) {
             .sort((a,b)=> a.price - b.price);
 
         uniqueBeers.forEach((beer) => {
-          content += `
-            <tr>
-              <td>${getCategoryDisplayName(beer.name)}</td>
-              <td>${beer.size}</td>
-              <td class="beer-price">$${beer.price.toFixed(2)}</td>
-            </tr>
-          `;
+            const isHappyHour = beer.is_happy_hour;
+            const priceClass = isHappyHour ? ' happy-hour' : '';
+            const happyHourText = isHappyHour ? ' (Happy Hour)' : '';
+            
+            content += `
+                <tr>
+                    <td>${getCategoryDisplayName(beer.name)}${happyHourText}</td>
+                    <td>${beer.size}</td>
+                    <td class="beer-price${priceClass}">$${beer.price.toFixed(2)}</td>
+                </tr>
+            `;
         });
 
         const mostRecentUpdate = beers.reduce((latest, beer) => {
