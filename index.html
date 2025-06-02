@@ -2132,7 +2132,7 @@
                 const happyHourStart = document.getElementById("happy-hour-start").value;
                 const happyHourEnd = document.getElementById("happy-hour-end").value;
                 const happyHourDaysSelect = document.getElementById("happy-hour-days");
-                const happyHourDays = getSelectedDays('#submit-price-modal');
+                const happyHourDays = getSelectedDays('#add-pub-modal');
 
                 const newPub = {
                     id: appState.pubs.length + 1,
@@ -2252,8 +2252,8 @@
                 const isHappyHour = document.getElementById("is-happy-hour-price")?.checked || false;
                 const happyHourStart = document.getElementById("happy-hour-price-start")?.value;
                 const happyHourEnd = document.getElementById("happy-hour-price-end")?.value;
-                const happyHourDaysSelect = document.getElementById("happy-hour-price-days");
-                const happyHourDays = happyHourDaysSelect ? Array.from(happyHourDaysSelect.selectedOptions).map(opt => opt.value) : [];
+                const happyHourDays = getSelectedDays('#submit-price-modal');
+
 
                 const beerData = {
                     name: selectedCategory,
