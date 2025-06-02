@@ -1026,9 +1026,7 @@
             return;
           }
 
-          pubs = pubs.map((p) => (p.id === pub.id ? pub : p));
-          console.log("Pub successfully updated in database");
-          renderPubs();
+          await fetchBeerPrices();
         } catch (err) {
           console.error("Database update error:", err);
           const errorElement = document.getElementById("error-message");
