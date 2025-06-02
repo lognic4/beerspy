@@ -822,7 +822,7 @@
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc"; // Replace with your actual API key
 
   // Initialize Supabase client
-  const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   console.log("Supabase client initialized", sbClient);
 
   // Dummy data for local testing if you want to run without Supabase
