@@ -1822,17 +1822,33 @@ document.addEventListener("click", function(e) {
         const mostRecentUpdate = beers.reduce((latest, beer) => {
         if (!beer.last_updated) return latest;
 
-        // Parse UTC timestamp
-        const beerDateUTC = new Date(beer.last_updated);
-
+        // Ensure the timestamp is treated as UTC by appending 'Z' if not present
+        let timestamp = beer.last_updated;
+        if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
+            timestamp += 'Z';
+        }
+        
+        const beerDateUTC = new Date(timestamp);
         return !latest || beerDateUTC > latest ? beerDateUTC : latest;
         }, null);
 
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
         const lastUpdatedDate = mostRecentUpdate 
-        ? mostRecentUpdate.toLocaleString()
-        : new Date().toLocaleString();
+        ? mostRecentUpdate.toLocaleString(undefined, { 
+            hour12: false, 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit'
+            })
+        : new Date().toLocaleString(undefined, { 
+            hour12: false, 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit'
+            });
 
         content += `
             </table>
