@@ -941,7 +941,7 @@
         document.getElementById("pub-address").value = "";
         document.getElementById("pub-lat").value = "";
         document.getElementById("pub-lon").value = "";
-        document.getElementById("beer-name").value = "";
+        document.getElementById("beer-category").value = "house";
         document.getElementById("beer-size").value = "pint";
         document.getElementById("beer-price").value = "";
       }
@@ -1366,7 +1366,7 @@
               if (errorMessage) errorMessage.innerText = "Please validate the location before submitting";
               return;
             }
-            if (!beerName || !beerSize || !beerPrice || isNaN(beerPrice)) {
+            if (!beerCategory || !beerSize || !beerPrice || isNaN(beerPrice)) {
               if (errorMessage) errorMessage.innerText = "Please enter valid beer details";
               return;
             }
@@ -1820,16 +1820,17 @@ document.addEventListener("click", function(e) {
             }
 
             // Handle new beer addition (keep your existing logic)
+            // Handle new beer addition
             const newBeerCategoryInput = document.getElementById("new-beer-category");
             const newBeerSizeInput = document.getElementById("new-beer-size");
             const newBeerPriceInput = document.getElementById("new-beer-price");
 
-            if (newBeerNameInput && newBeerSizeInput && newBeerPriceInput) {
+            if (newBeerCategoryInput && newBeerSizeInput && newBeerPriceInput) {
             const newBeerCategory = newBeerCategoryInput.value;
             const newBeerSize = newBeerSizeInput.value;
             const newBeerPrice = parseFloat(newBeerPriceInput.value);
 
-            if (newBeerName && !isNaN(newBeerPrice) && newBeerPrice > 0) {
+            if (newBeerCategory && !isNaN(newBeerPrice) && newBeerPrice > 0) {
                 currentPubForPriceUpdate.beers.push({
                 name: newBeerCategory,
                 size: newBeerSize,
@@ -1849,9 +1850,10 @@ document.addEventListener("click", function(e) {
             if (submitPriceModal) submitPriceModal.style.display = "none";
             
             // Clear form fields
+            // Clear form fields
             if (existingBeerSelect) existingBeerSelect.value = "";
             if (existingBeerPriceInput) existingBeerPriceInput.value = "";
-            if (newBeerNameInput) newBeerNameInput.value = "";
+            if (newBeerCategoryInput) newBeerCategoryInput.value = "";
             if (newBeerPriceInput) newBeerPriceInput.value = "";
             } catch (error) {
             console.error("Failed to update pub prices:", error);
@@ -1959,20 +1961,7 @@ document.addEventListener("click", function(e) {
     }
 
 
-    // Get unique beer names from this specific pub
-    const uniqueBeersAtThisPub = [...new Set(pub.beers.map(beer => beer.name))];
-    
-    // Clear existing options except the first one
-    beerSelect.innerHTML = '<option value="">-- Select a beer --</option>';
-    
-    // Add beer options from this pub only
-    uniqueBeersAtThisPub.forEach(beerName => {
-        const option = document.createElement("option");
-        option.value = beerName;
-        option.textContent = beerName;
-        beerSelect.appendChild(option);
-    });
-    }
+ 
 
     async function populateBeerDropdown() {
     const beerSelect = document.getElementById("existing-beer-select");
