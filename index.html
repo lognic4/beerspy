@@ -1526,6 +1526,11 @@
             }
         });
         }
+     
+        // "Submit New Price" modal setup
+        setupSubmitPriceModal();
+      }
+// Move these functions outside of the event listeners, at the top level
         function extractPubName(placeData) {
         if (placeData.name) return placeData.name;
         
@@ -1555,10 +1560,6 @@
         if (place.class === 'shop') return 'Shop';
         return 'Location';
         }
-        // "Submit New Price" modal setup
-        setupSubmitPriceModal();
-      }
-
         function renderPubs() {
         // Clear existing markers
         markers.forEach((marker) => {
