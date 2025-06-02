@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,15 +12,6 @@
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google Fonts for typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Supabase (UMD for browser) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.28.0/dist/umd/supabase.min.js"></script>
-    
-    <!-- Favicon -->
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3417/3417754.png" type="image/png">
-
     <style>
         /* ======== Global Styles ======== */
         :root {
@@ -40,24 +32,27 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Open Sans', 'Helvetica', Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            background: #f5f7f9;
+            background: linear-gradient(135deg, #f9fafb 0%, #eef2f7 100%);
             color: var(--text-dark);
             min-height: 100vh;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
+            line-height: 1.6;
         }
         
         /* ======== Header Styles ======== */
         header {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             color: white;
             padding: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 100;
         }
         
         header .container {
@@ -76,17 +71,21 @@
         
         .logo .beer-icon {
             font-size: 2.2rem;
+            transform: translateY(-2px);
         }
         
         .logo h1 {
             font-size: 1.8rem;
-            font-weight: 700;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
         
         .logo p {
-            font-size: 1rem;
+            font-size: 0.9rem;
             opacity: 0.9;
             margin-top: 4px;
+            font-weight: 300;
         }
         
         /* ======== Main Layout ======== */
@@ -105,8 +104,8 @@
             flex: 1;
             position: relative;
             height: calc(100vh - 160px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border-radius: 12px;
             overflow: hidden;
         }
         
@@ -119,12 +118,12 @@
         #map-controls {
             width: 300px;
             background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 25px;
         }
         
         .control-section {
@@ -132,44 +131,49 @@
         }
         
         .control-section h3 {
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             color: var(--primary);
             padding-bottom: 8px;
-            border-bottom: 1px solid var(--medium-gray);
+            border-bottom: 2px solid var(--medium-gray);
+            font-weight: 700;
+            font-size: 1.1rem;
         }
         
         /* Beer Size Filter */
         .size-filter {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            gap: 10px;
         }
         
         .size-btn {
-            padding: 10px 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
             background: white;
             color: var(--text-dark);
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
+            font-size: 0.9rem;
         }
         
         .size-btn:hover, .size-btn.active {
             background: var(--secondary);
             color: white;
             border-color: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         
         /* Add Pub Button */
         #add-pub-btn {
-            padding: 12px;
-            background: var(--accent);
+            padding: 14px;
+            background: linear-gradient(to right, var(--accent), var(--accent-dark));
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -177,10 +181,13 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(230, 126, 34, 0.3);
         }
         
         #add-pub-btn:hover {
-            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(230, 126, 34, 0.4);
         }
         
         /* Search box */
@@ -190,10 +197,17 @@
         
         .search-box input {
             width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
         
         /* Statistics display */
@@ -207,42 +221,48 @@
         .stat-card {
             flex: 1;
             background: var(--light-gray);
-            border-radius: 4px;
-            padding: 10px;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
         }
         
         .stat-card .value {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--primary);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--accent-dark);
         }
         
         .stat-card .label {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--text-medium);
         }
         
         /* ======== Search Bar ======== */
         .search-container {
             position: absolute;
-            top: 18px;
-            right: 18px;
+            top: 20px;
+            right: 20px;
             z-index: 1000;
-            width: 300px;
-            border-radius: 4px;
+            width: 320px;
+            border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
         }
         
         .search-bar {
             display: flex;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
-            border-radius: 4px;
+            border-radius: 8px;
             overflow: hidden;
         }
         
         .search-bar input {
             flex-grow: 1;
-            padding: 12px 15px;
+            padding: 14px 18px;
             border: none;
             font-size: 1rem;
         }
@@ -266,16 +286,17 @@
             max-height: 300px;
             overflow-y: auto;
             background: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            border-radius: 0 0 4px 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+            border-radius: 0 0 8px 8px;
             margin-top: 1px;
             display: none;
         }
         
         .search-item {
-            padding: 10px 15px;
+            padding: 12px 18px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
+            transition: background 0.2s;
         }
         
         .search-item:hover {
@@ -283,29 +304,45 @@
         }
         
         /* ======== Marker Styles ======== */
-        .price-tooltip {
-            padding: 6px 10px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-            font-size: 1rem;
-            font-weight: 700;
-            color: #333;
+        .price-bubble {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+            background: linear-gradient(to bottom right, var(--accent), var(--accent-dark));
+            color: white;
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-weight: 800;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             text-align: center;
-            min-width: 60px;
+            min-width: 70px;
+            font-size: 1rem;
+        }
+
+        .marker-arrow {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 12px solid var(--accent);
         }
         
         /* ======== Pub Info Popup ======== */
         .pub-popup {
             min-width: 240px;
             max-width: 300px;
+            border-radius: 12px;
+            overflow: hidden;
         }
         
         .pub-popup h3 {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             margin-bottom: 5px;
             color: var(--primary);
+            font-weight: 700;
         }
         
         .pub-popup .address {
@@ -322,28 +359,30 @@
         
         .beer-table th {
             text-align: left;
-            padding: 8px;
-            background: var(--medium-gray);
-            border-bottom: 1px solid #ddd;
+            padding: 10px;
+            background: var(--primary);
+            color: white;
             font-weight: 600;
-            color: var(--text-medium);
         }
         
         .beer-table td {
-            padding: 8px;
+            padding: 10px;
             border-bottom: 1px solid #f0f0f0;
         }
         
         .beer-price {
             text-align: right;
             color: var(--warning);
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 1.1rem;
         }
         
         .last-updated {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #95a5a6;
             margin-bottom: 15px;
+            text-align: right;
+            font-style: italic;
         }
         
         .popup-actions {
@@ -353,100 +392,119 @@
         }
         
         .add-beer-btn {
-            background: var(--secondary);
+            background: linear-gradient(to right, var(--secondary), var(--secondary-dark));
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
+            padding: 10px 18px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            transition: background 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
         }
         
         .add-beer-btn:hover {
-            background: var(--secondary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.2);
         }
         
         /* ======== Modal Styles ======== */
         .modal {
-            display: none;
+            display: flex;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.7);
             z-index: 2000;
             align-items: center;
             justify-content: center;
             padding: 15px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
         }
         
         .modal-content {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.35);
             width: 100%;
             max-width: 500px;
             overflow: hidden;
+            transform: translateY(30px);
+            transition: transform 0.4s ease;
+        }
+        
+        .modal.active .modal-content {
+            transform: translateY(0);
         }
         
         .modal-header {
-            background: var(--primary);
+            background: linear-gradient(to right, var(--primary), var(--primary-light));
             color: white;
-            padding: 15px 20px;
+            padding: 18px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
         .modal-header h2 {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             margin: 0;
+            font-weight: 700;
         }
         
         .close-btn {
-            background: none;
+            background: rgba(255,255,255,0.2);
             border: none;
             color: white;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             cursor: pointer;
-            padding: 5px;
+            padding: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
         
         .close-btn:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.3);
+            transform: rotate(90deg);
         }
         
         .modal-body {
-            padding: 20px;
+            padding: 25px;
             max-height: 70vh;
             overflow-y: auto;
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             font-weight: 600;
             color: var(--primary);
+            font-size: 1.05rem;
         }
         
         .form-group input, .form-group select {
             width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
             font-size: 1rem;
             transition: border 0.3s;
         }
@@ -454,12 +512,12 @@
         .form-group input:focus, .form-group select:focus {
             outline: none;
             border-color: var(--secondary);
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
         
         .form-row {
             display: flex;
-            gap: 15px;
+            gap: 18px;
             margin-bottom: 15px;
         }
         
@@ -469,58 +527,68 @@
         }
         
         .modal-footer {
-            padding: 15px 20px;
+            padding: 20px;
             background: var(--light-gray);
             display: flex;
             justify-content: flex-end;
-            gap: 12px;
+            gap: 15px;
         }
         
         .modal-btn {
-            padding: 10px 20px;
+            padding: 12px 26px;
             border: none;
-            border-radius: 4px;
-            font-weight: 600;
+            border-radius: 8px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
+            font-size: 1rem;
         }
         
         .btn-cancel {
             background: white;
-            border: 1px solid #ddd;
+            border: 2px solid #ddd;
             color: var(--text-dark);
         }
         
         .btn-cancel:hover {
             background: #f5f5f5;
+            border-color: #bbb;
         }
         
         .btn-submit {
-            background: var(--accent);
+            background: linear-gradient(to right, var(--accent), var(--accent-dark));
             color: white;
+            box-shadow: 0 3px 10px rgba(230, 126, 34, 0.4);
         }
         
         .btn-submit:hover {
-            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 14px rgba(230, 126, 34, 0.5);
         }
         
         .search-geocode {
             margin-top: 5px;
             display: flex;
+            gap: 10px;
         }
         
         .search-geocode .form-group {
             flex: 1;
-            margin-right: 10px;
+            margin: 0;
         }
         
         .search-geocode button {
             background: var(--secondary);
             color: white;
             border: none;
-            padding: 0 15px;
-            border-radius: 4px;
+            padding: 0 18px;
+            border-radius: 6px;
             cursor: pointer;
+            min-width: 50px;
+        }
+        
+        .search-geocode button:hover {
+            background: var(--secondary-dark);
         }
         
         /* Footer */
@@ -528,47 +596,19 @@
             background: var(--primary);
             color: white;
             text-align: center;
-            padding: 15px;
+            padding: 18px;
             margin-top: auto;
+            font-size: 0.9rem;
         }
         
         .error {
             color: #e74c3c;
             font-weight: 600;
             background: #fdecea;
-            padding: 10px;
-            border-radius: 4px;
+            padding: 12px;
+            border-radius: 6px;
             margin: 10px 0;
-        }
-
-        
-        /* Custom marker arrow */
-        .marker-arrow {
-            position: absolute;
-            width: 0;
-            height: 0;
-            bottom: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            border-top: 12px solid transparent;
-            border-bottom: 12px solid transparent;
-            border-left: 8px solid var(--accent-light);
-        }
-
-        /* Price bubble */
-        .price-bubble {
-            position: absolute;
-            background: var(--accent);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 12px;
-            font-weight: bold;
-            bottom: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1001;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-left: 4px solid #e74c3c;
         }
 
         /* Statistics header */
@@ -576,29 +616,61 @@
             position: absolute;
             bottom: 20px;
             right: 20px;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.92);
+            padding: 12px 20px;
+            border-radius: 10px;
             display: flex;
-            gap: 15px;
+            gap: 20px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            z-index: 100;
         }
-    
+        
+        .stat-card {
+            padding: 10px 15px;
+            min-width: 90px;
+        }
+        
+        .stat-card .value {
+            color: var(--primary);
+        }
+        
+        /* For mobile */
+        @media (max-width: 900px) {
+            #main-container {
+                flex-direction: column;
+                padding: 15px;
+            }
+            
+            #map-container {
+                width: 100%;
+                height: 400px;
+            }
+            
+            #map-controls {
+                width: 100%;
+            }
+            
+            .search-container {
+                left: 15px;
+                right: 15px;
+                width: auto;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Statistics header -->
     <div id="stats-header">
         <div class="stat-card">
-            <div class="value" id="pubs-count-header">0</div>
+            <div class="value" id="pubs-count-header">7</div>
             <div class="label">Pubs</div>
         </div>
         <div class="stat-card">
-            <div class="value" id="beers-count-header">0</div>
+            <div class="value" id="beers-count-header">32</div>
             <div class="label">Beers</div>
         </div>
         <div class="stat-card">
-            <div class="value" id="avg-price-header">-</div>
+            <div class="value" id="avg-price-header">$12.75</div>
             <div class="label">Avg Price</div>
         </div>
     </div>
@@ -607,10 +679,10 @@
     <header>
         <div class="container">
             <div class="logo">
-                <div class="beer-icon">🍺</div>
+                <div class="beer-icon">🍻</div>
                 <div>
-                    <h1>BeerSpy</h1>
-                    <p>yum yum dot com</p>
+                    <h1>BeerSpy Melbourne</h1>
+                    <p>Find the best beer prices near you</p>
                 </div>
             </div>
         </div>
@@ -619,7 +691,7 @@
     <div id="main-container">
         <!-- Map Container -->
         <div id="map-container">
-            <div id="map"></div>
+            <div id="map">Map will appear here</div>
             
             <!-- Search Bar -->
             <div class="search-container">
@@ -629,6 +701,14 @@
                 </div>
                 <div class="search-results" id="search-results">
                     <!-- Search results will appear here -->
+                    <div class="search-item">
+                        <div style="font-weight:600">The Lagerhaus</div>
+                        <div style="font-size:0.9em;opacity:0.8">250 Collins St</div>
+                    </div>
+                    <div class="search-item">
+                        <div style="font-weight:600">Hops & Glory</div>
+                        <div style="font-size:0.9em;opacity:0.8">123 Flinders St</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -660,79 +740,42 @@
             
             <div class="control-section stats-container">
                 <div class="stat-card">
-                    <div class="value" id="pubs-count">0</div>
+                    <div class="value" id="pubs-count">7</div>
                     <div class="label">Pubs</div>
                 </div>
                 <div class="stat-card">
-                    <div class="value" id="beers-count">0</div>
+                    <div class="value" id="beers-count">32</div>
                     <div class="label">Beers</div>
                 </div>
                 <div class="stat-card">
-                    <div class="value" id="avg-price">-</div>
+                    <div class="value" id="avg-price">$12.75</div>
                     <div class="label">Avg Price</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Submit New Price Modal -->
-    <div class="modal" id="submit-price-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Submit New Price</h2>
-                <button class="close-btn" id="close-submit-price">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="existing-beers-list"></div>
-                <hr>
-                <h3>Add New Beer</h3>
-                <div class="form-group">
-                    <label for="new-beer-name">New Beer Name</label>
-                    <input type="text" id="new-beer-name" placeholder="Enter new beer name">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="new-beer-size">Size</label>
-                        <select id="new-beer-size">
-                            <option value="pint">Pint</option>
-                            <option value="schooner">Schooner</option>
-                            <option value="pot">Pot</option>
-                            <option value="can">Can</option>
-                            <option value="jug">Jug</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-beer-price">Price (AUD)</label>
-                        <input type="number" id="new-beer-price" min="0" step="0.01" placeholder="0.00">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-cancel" id="cancel-submit-price">Cancel</button>
-                <button class="modal-btn btn-submit" id="submit-price-btn">Submit Price</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Add Pub Modal -->
+    <!-- Add Pub Modal (Fixed with proper close IDs) -->
     <div class="modal" id="add-pub-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Add New Pub</h2>
+                <h2><i class="fas fa-beer"></i> Add New Pub</h2>
                 <button class="close-btn" id="close-add-pub">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="error-message" class="error" style="display: none;"></div>
+                <div id="error-message" class="error" style="display: none;">
+                    This is a placeholder error message.
+                </div>
                 <div class="form-group">
                     <label for="pub-name">Pub Name *</label>
-                    <input type="text" id="pub-name" required placeholder="Enter pub name">
+                    <input type="text" id="pub-name" placeholder="Enter pub name" value="The Riverside Inn">
                 </div>
                 
                 <div class="form-group">
                     <label for="pub-address">Address *</label>
                     <div class="search-geocode">
                         <div class="form-group">
-                            <input type="text" id="pub-address" required placeholder="Enter address">
+                            <input type="text" id="pub-address" placeholder="Enter address" value="123 Flinders Street, Melbourne">
                         </div>
                         <button id="find-location">
                             <i class="fas fa-location-arrow"></i>
@@ -743,12 +786,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="pub-lat">Latitude</label>
-                        <input type="text" id="pub-lat" readonly>
+                        <input type="text" id="pub-lat" readonly value="-37.818271">
                     </div>
                     
                     <div class="form-group">
                         <label for="pub-lon">Longitude</label>
-                        <input type="text" id="pub-lon" readonly>
+                        <input type="text" id="pub-lon" readonly value="144.957199">
                     </div>
                 </div>
                 
@@ -756,13 +799,13 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="beer-name">Beer Name *</label>
-                        <input type="text" id="beer-name" required placeholder="Beer name">
+                        <input type="text" id="beer-name" value="Mountain Brew IPA">
                     </div>
                     
                     <div class="form-group">
                         <label for="beer-size">Size *</label>
-                        <select id="beer-size" required>
-                            <option value="pint">Pint (568ml)</option>
+                        <select id="beer-size">
+                            <option value="pint" selected>Pint (568ml)</option>
                             <option value="schooner">Schooner (425ml)</option>
                             <option value="pot">Pot (285ml)</option>
                             <option value="bottle">Bottle</option>
@@ -773,19 +816,19 @@
                 
                 <div class="form-group">
                     <label for="beer-price">Price (AUD) *</label>
-                    <input type="number" id="beer-price" min="0" step="0.01" required placeholder="0.00">
+                    <input type="number" id="beer-price" min="0" step="0.01" value="14.90">
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="modal-btn btn-cancel" id="cancel-add-pub">Cancel</button>
-                <button class="modal-btn btn-submit" id="submit-pub-btn">Add Pub</button>
+                <button class="modal-btn btn-submit">Add Pub</button>
             </div>
         </div>
     </div>
     
     <!-- Footer -->
     <footer>
-        <p>BeerSpy Melbourne &copy; 2023 - Find the best beer prices in town</p>
+        <p>BeerSpy (alpha) v0.0.1  &copy; 2025</p>
     </footer>
 
      
@@ -1101,8 +1144,8 @@
 
         // Modal controls for "Add Pub"
         const modal = document.getElementById("add-pub-modal");
-        const modalCloseBtn = document.querySelector(".close-btn");
-        const modalCancelBtn = document.querySelector(".btn-cancel");
+        const modalCloseBtn = document.querySelector("close-add-pub");
+        const modalCancelBtn = document.querySelector("cancel-add-pub");
         const submitPubBtn = document.getElementById("submit-pub-btn");
         const findLocationBtn = document.getElementById("find-location");
         const errorMessage = document.getElementById("error-message");
