@@ -1319,7 +1319,24 @@
               </tr>
         `;
 
-        beers.forEach((beer) => {
+        const beerMap = new Map();
+        
+        beers.forEach(beer => {
+            const existingBeer = beerMap.get(beer.name);
+            const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
+            
+            if (!existingBeer || beerTime > existingBeer.time) {
+            beerMap.set(beer.name, {
+                beer: beer,
+                time: beerTime
+            });
+            }
+        });
+
+        // Convert Map values to array for rendering
+        const uniqueBeers = Array.from(beerMap.values()).map(i => i.beer);
+
+        uniqueBeers.forEach((beer) => {
           content += `
             <tr>
               <td>${beer.name}</td>
@@ -1335,9 +1352,11 @@
         return !latest || beerDate > latest ? beerDate : latest;
         }, null);
 
+
+
        
         const lastUpdatedDate = mostRecentUpdate 
-        ? `${mostRecentUpdate.toLocaleDateString()} at ${mostRecentUpdate.toLocaleTimeString('en-AU', { hour12: false })}`
+        ? `${mostRecentUpdate.toLocaleDateString(undefined, { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })} at ${mostRecentUpdate.toLocaleTimeString('en-AU', { hour12: false, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })}`
         : `${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString('en-AU', { hour12: false })}`;
 
         content += `
