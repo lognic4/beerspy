@@ -754,11 +754,21 @@
             <div class="modal-body">
                 <div id="existing-beers-list"></div>
                 <hr>
-                <h3>Add New Beer</h3>
-                <div class="form-group">
-                    <label for="new-beer-name">New Beer Name</label>
-                    <input type="text" id="new-beer-name" placeholder="Enter new beer name">
-                </div>
+            <h3>Add New Beer</h3>
+            <div class="form-group">
+                <label for="new-beer-category">Beer Category</label>
+                <select id="new-beer-category">
+                    <option value="house">House/Cheapest</option>
+                    <option value="local">Victorian/Australian Beers</option>
+                    <option value="guinness">Guinness</option>
+                    <option value="pale-ale">Pale Ales</option>
+                    <option value="ipa">IPAs</option>
+                    <option value="lager">Lagers</option>
+                    <option value="dark">Stouts & Porters</option>
+                    <option value="specialty">Wheat/Sour/Cider</option>
+                    <option value="international">Internationals</option>
+                </select>
+            </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="new-beer-size">Size</label>
@@ -821,8 +831,18 @@
                 <h3>Add Initial Beer</h3>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="beer-name">Beer Name *</label>
-                        <input type="text" id="beer-name" required placeholder="Beer name">
+                        <label for="beer-category">Beer Category *</label>
+                        <select id="beer-category" required>
+                            <option value="house">House/Cheapest</option>
+                            <option value="local">Victorian/Australian Beers</option>
+                            <option value="guinness">Guinness</option>
+                            <option value="pale-ale">Pale Ales</option>
+                            <option value="ipa">IPAs</option>
+                            <option value="lager">Lagers</option>
+                            <option value="dark">Stouts & Porters</option>
+                            <option value="specialty">Wheat/Sour/Cider</option>
+                            <option value="international">Internationals</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
@@ -1328,7 +1348,7 @@
             const address = addressInput.value.trim();
             const lat = latInput.value.trim();
             const lon = lonInput.value.trim();
-            const beerName = beerNameInput.value.trim();
+            const beerCategory = document.getElementById("beer-category").value;
             const beerSize = beerSizeInput.value;
             const beerPrice = parseFloat(beerPriceInput.value);
             
@@ -1357,7 +1377,7 @@
               address,
               lat: parseFloat(lat),
               lon: parseFloat(lon),
-              beers: [{ name: beerName, size: beerSize, price: beerPrice }],
+              beers: [{ name: beerCategory, size: beerSize, price: beerPrice }],
             };
 
             try {
@@ -1649,7 +1669,7 @@ document.addEventListener("click", function(e) {
             <div class="address">${pub.address}</div>
             <table class="beer-table">
               <tr>
-                <th>Beer</th>
+                <th>Category</th>
                 <th>Size</th>
                 <th>Price</th>
               </tr>
@@ -1671,12 +1691,14 @@ document.addEventListener("click", function(e) {
         });
 
         // Convert Map values to array for rendering
-        const uniqueBeers = Array.from(beerMap.values()).map(i => i.beer);
+        const uniqueBeers = Array.from(beerMap.values())
+            .map(i => i.beer)
+            .sort((a,b)=> a.price - b.price);
 
         uniqueBeers.forEach((beer) => {
           content += `
             <tr>
-              <td>${beer.name}</td>
+              <td>${getCategoryDisplayName(beer.name)}</td>
               <td>${beer.size}</td>
               <td class="beer-price">$${beer.price.toFixed(2)}</td>
             </tr>
@@ -1798,18 +1820,18 @@ document.addEventListener("click", function(e) {
             }
 
             // Handle new beer addition (keep your existing logic)
-            const newBeerNameInput = document.getElementById("new-beer-name");
+            const newBeerCategoryInput = document.getElementById("new-beer-category");
             const newBeerSizeInput = document.getElementById("new-beer-size");
             const newBeerPriceInput = document.getElementById("new-beer-price");
 
             if (newBeerNameInput && newBeerSizeInput && newBeerPriceInput) {
-            const newBeerName = newBeerNameInput.value.trim();
+            const newBeerCategory = newBeerCategoryInput.value;
             const newBeerSize = newBeerSizeInput.value;
             const newBeerPrice = parseFloat(newBeerPriceInput.value);
 
             if (newBeerName && !isNaN(newBeerPrice) && newBeerPrice > 0) {
                 currentPubForPriceUpdate.beers.push({
-                name: newBeerName,
+                name: newBeerCategory,
                 size: newBeerSize,
                 price: newBeerPrice,
                 });
@@ -1903,8 +1925,39 @@ document.addEventListener("click", function(e) {
 
     // New function to populate dropdown with pub-specific beers
     function populateBeerDropdownForPub(pub) {
-    const beerSelect = document.getElementById("existing-beer-select");
+        const beerSelect = document.getElementById("existing-beer-select");
     if (!beerSelect) return;
+
+    // Get unique beer categories from this specific pub
+    const uniqueCategoriesAtThisPub = [...new Set(pub.beers.map(beer => beer.name))];
+    
+    // Clear existing options except the first one
+    beerSelect.innerHTML = '<option value="">-- Select a category --</option>';
+    
+    // Add category options from this pub only
+    uniqueCategoriesAtThisPub.forEach(category => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = getCategoryDisplayName(category);
+        beerSelect.appendChild(option);
+    });
+}
+
+    function getCategoryDisplayName(category) {
+        const displayNames = {
+            'house': 'House/Cheapest',
+            'local': 'Victorian/Australian Beers',
+            'pale-ale': 'Pale Ales',
+            'ipa': 'IPAs',
+            'lager': 'Lagers',
+            'dark': 'Stouts & Porters',
+            'guinness': 'Guinness',
+            'specialty': 'Wheat/Sour/Cider',
+            'international': 'Internationals'
+        };
+        return displayNames[category] || category;
+    }
+
 
     // Get unique beer names from this specific pub
     const uniqueBeersAtThisPub = [...new Set(pub.beers.map(beer => beer.name))];
