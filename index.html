@@ -1015,7 +1015,14 @@
 
             static formatDate(dateString) {
                 if (!dateString) return 'Unknown';
-                const date = new Date(dateString);
+                
+                // Ensure the timestamp is treated as UTC by appending 'Z' if not present
+                let timestamp = dateString;
+                if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
+                    timestamp += 'Z';
+                }
+                
+                const date = new Date(timestamp);
                 return date.toLocaleString(undefined, { 
                     hour12: false, 
                     year: 'numeric', 
@@ -1025,7 +1032,6 @@
                     minute: '2-digit'
                 });
             }
-
             static getAgeClass(dateString) {
                 if (!dateString) return 'old';
                 const now = new Date();
@@ -1046,8 +1052,9 @@
                 const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
                 const currentTime = now.getHours() * 60 + now.getMinutes();
                 
-                // Check if today is a happy hour day
-                if (!beer.happy_hour_days.includes(currentDay)) {
+                // Check if today is a happy hour day - handle both array and string formats
+                const happyHourDays = Array.isArray(beer.happy_hour_days) ? beer.happy_hour_days : [beer.happy_hour_days];
+                if (!happyHourDays.includes(currentDay)) {
                     return false;
                 }
                 
@@ -1065,6 +1072,7 @@
                     return currentTime >= startTime || currentTime <= endTime;
                 }
             }
+         
         }
 
         // ========== LOCATION SERVICE ==========
@@ -1377,35 +1385,50 @@
             }
 
             renderPubs() {
-                // Clear existing markers
-                this.markers.forEach(marker => {
-                    if (this.map.hasLayer(marker)) {
-                        this.map.removeLayer(marker);
+            // Clear existing markers
+            this.markers.forEach(marker => {
+                if (this.map.hasLayer(marker)) {
+                    this.map.removeLayer(marker);
+                }
+            });
+            this.markers = [];
+
+            const pubsForSize = this.dataManager.getPubsForSize();
+
+            pubsForSize.forEach(pub => {
+                if (pub.beers.length === 0) return;
+
+                // Get the most recent price for each unique beer name
+                const beerMap = new Map();
+                pub.beers.forEach(beer => {
+                    const existingBeer = beerMap.get(beer.name);
+                    const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
+                    
+                    if (!existingBeer || beerTime > existingBeer.time) {
+                        beerMap.set(beer.name, {
+                            beer: beer,
+                            time: beerTime
+                        });
                     }
                 });
-                this.markers = [];
 
-                const pubsForSize = this.dataManager.getPubsForSize();
+                // Get the most recent prices and find the minimum among those
+                const mostRecentPrices = Array.from(beerMap.values()).map(item => item.beer.price);
+                const minRecentPrice = Math.min(...mostRecentPrices);
+                const cheapestBeer = Array.from(beerMap.values()).find(item => item.beer.price === minRecentPrice).beer;
+                
+                const ageClass = Utils.getAgeClass(cheapestBeer.last_updated);
+                const isCurrentlyHappyHour = Utils.checkIfCurrentlyHappyHour(cheapestBeer);
 
-                pubsForSize.forEach(pub => {
-                    if (pub.beers.length === 0) return;
+                const marker = L.marker([pub.lat, pub.lon], {
+                    icon: this.createPriceIcon(minRecentPrice, ageClass, isCurrentlyHappyHour),
+                }).addTo(this.map);
 
-                    // Get cheapest beer for this size
-                    const minPrice = Math.min(...pub.beers.map(beer => beer.price));
-                    const cheapestBeer = pub.beers.find(beer => beer.price === minPrice);
-                    
-                    const ageClass = Utils.getAgeClass(cheapestBeer.last_updated);
-                    const isCurrentlyHappyHour = Utils.checkIfCurrentlyHappyHour(cheapestBeer);
-
-                    const marker = L.marker([pub.lat, pub.lon], {
-                        icon: this.createPriceIcon(minPrice, ageClass, isCurrentlyHappyHour),
-                    }).addTo(this.map);
-
-                    marker.pubData = pub;
-                    marker.on("click", () => this.onMarkerClick(pub));
-                    this.markers.push(marker);
-                });
-            }
+                marker.pubData = pub;
+                marker.on("click", () => this.onMarkerClick(pub));
+                this.markers.push(marker);
+            });
+        }
 
             createPriceIcon(price, ageClass, isCurrentlyHappyHour = false) {
                 const happyHourClass = isCurrentlyHappyHour ? ' price-bubble--happy-hour' : '';
@@ -1438,7 +1461,6 @@
                     }, 100);
                 }, 50);
             }
-
             createPopupContent(pub) {
                 const beersForCurrentSize = pub.beers.filter(beer => beer.size === this.dataManager.currentSize);
                 
@@ -1454,7 +1476,27 @@
                             </tr>
                 `;
 
+                // Deduplicate beers - show only the most recent entry for each beer name/size combo
+                const beerMap = new Map();
                 beersForCurrentSize.forEach(beer => {
+                    const key = `${beer.name}_${beer.size}`;
+                    const existingBeer = beerMap.get(key);
+                    const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
+                    
+                    if (!existingBeer || beerTime > existingBeer.time) {
+                        beerMap.set(key, {
+                            beer: beer,
+                            time: beerTime
+                        });
+                    }
+                });
+
+                // Convert Map values to array and sort by price
+                const uniqueBeers = Array.from(beerMap.values())
+                    .map(item => item.beer)
+                    .sort((a, b) => a.price - b.price);
+
+                uniqueBeers.forEach(beer => {
                     const isCurrentlyHappyHour = Utils.checkIfCurrentlyHappyHour(beer);
                     const priceClass = isCurrentlyHappyHour ? ' beer-price--happy-hour' : '';
                     const happyHourText = isCurrentlyHappyHour ? ' (Happy Hour)' : '';
@@ -1468,8 +1510,8 @@
                     `;
                 });
 
-                const mostRecentUpdate = beersForCurrentSize.reduce((latest, beer) => {
-                    const beerDate = new Date(beer.last_updated);
+                const mostRecentUpdate = uniqueBeers.reduce((latest, beer) => {
+                    const beerDate = new Date(beer.last_updated + 'Z');
                     return !latest || beerDate > latest ? beerDate : latest;
                 }, null);
 
@@ -1484,10 +1526,7 @@
 
                 return content;
             }
-
-            focusOnLocation(lat, lon, zoom = 16) {
-                this.map.setView([lat, lon], zoom);
-            }
+            
         }
 
         // ========== SEARCH MANAGER ==========
