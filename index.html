@@ -1592,7 +1592,56 @@
                 appState.pubs = Array.from(pubsMap.values());
                 console.log("Processed pubs:", appState.pubs);
             },
+            async updateSingleBeerPrice(pubName, lat, lon, beerData) {
+                try {
+                    if (CONFIG.TEST_MODE) {
+                        // Handle test mode
+                        const pub = appState.pubs.find(p => p.name === pubName && p.lat === lat && p.lon === lon);
+                        if (pub) {
+                            const existingBeerIndex = pub.beers.findIndex(
+                                beer => beer.name === beerData.name && beer.size === beerData.size
+                            );
+                            if (existingBeerIndex >= 0) {
+                                pub.beers[existingBeerIndex] = { ...pub.beers[existingBeerIndex], ...beerData };
+                            } else {
+                                pub.beers.push(beerData);
+                            }
+                        }
+                        MapManager.renderMarkers();
+                        return;
+                    }
 
+                    // Insert new record (don't delete existing ones unless it's the exact same beer/size combo)
+                    const newRecord = {
+                        pub_name: pubName,
+                        beer_name: beerData.name,
+                        size: beerData.size,
+                        price: beerData.price,
+                        lat: lat,
+                        lon: lon,
+                        location: pub.address, // You'll need to pass this
+                        last_updated: new Date().toISOString(),
+                        is_happy_hour: beerData.is_happy_hour || false,
+                        happy_hour_start: beerData.happy_hour_start || null,
+                        happy_hour_end: beerData.happy_hour_end || null,
+                        happy_hour_days: beerData.happy_hour_days || null
+                    };
+
+                    const { error: insertError } = await appState.sbClient
+                        .from("beer_prices")
+                        .insert([newRecord]);
+
+                    if (insertError) {
+                        throw new Error(`Error saving beer price: ${insertError.message}`);
+                    }
+
+                    await this.fetchBeerPrices();
+                    Utils.hideError();
+                } catch (err) {
+                    console.error("Database update error:", err);
+                    Utils.showError(`Database error: ${err.message}`);
+                }
+            }
             async updatePubInDatabase(pub) {
                 console.log("Updating pub in database:", pub);
 
@@ -2216,23 +2265,15 @@
                     happy_hour_days: isHappyHour ? happyHourDays : null
                 };
 
-                // Find if this beer/size combo already exists for this pub
-                const existingBeerIndex = appState.currentPubForPriceUpdate.beers.findIndex(
-                    beer => beer.name === selectedCategory && beer.size === selectedSize
-                );
-
-                if (existingBeerIndex >= 0) {
-                    // Update existing beer
-                    appState.currentPubForPriceUpdate.beers[existingBeerIndex] = {
-                        ...appState.currentPubForPriceUpdate.beers[existingBeerIndex],
-                        ...beerData
-                    };
-                } else {
-                    // Add new beer entry
-                    appState.currentPubForPriceUpdate.beers.push(beerData);
-                }
-
                 try {
+                        // Use the new method instead of updating the entire pub
+                    await DataManager.updateSingleBeerPrice(
+                            appState.currentPubForPriceUpdate.name,
+                            appState.currentPubForPriceUpdate.lat,
+                            appState.currentPubForPriceUpdate.lon,
+                            beerData
+                        );
+                
                     await DataManager.updatePubInDatabase(appState.currentPubForPriceUpdate);
                     document.getElementById("submit-price-modal").style.display = "none";
                     
