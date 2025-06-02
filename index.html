@@ -348,8 +348,12 @@
             background: var(--warning);
         }
 
-        .price-bubble.happy-hour {
-            background: #ff69b4;
+        /* Happy hour styling - higher specificity to override age classes */
+        .price-bubble.happy-hour,
+        .price-bubble.recent.happy-hour,
+        .price-bubble.average.happy-hour,
+        .price-bubble.old.happy-hour {
+            background: #ff69b4 !important;
             animation: pulse-pink 2s infinite;
         }
 
@@ -836,11 +840,37 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="happy-hour-start">Start Time</label>
-                            <input type="time" id="happy-hour-start">
+                            <select id="happy-hour-start">
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">1:00 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                                <option value="18:00">6:00 PM</option>
+                                <option value="19:00">7:00 PM</option>
+                                <option value="20:00">8:00 PM</option>
+                                <option value="21:00">9:00 PM</option>
+                                <option value="22:00">10:00 PM</option>
+                                <option value="23:00">11:00 PM</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="happy-hour-end">End Time</label>
-                            <input type="time" id="happy-hour-end">
+                            <select id="happy-hour-end">
+                                <option value="13:00">1:00 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                                <option value="18:00">6:00 PM</option>
+                                <option value="19:00">7:00 PM</option>
+                                <option value="20:00">8:00 PM</option>
+                                <option value="21:00">9:00 PM</option>
+                                <option value="22:00">10:00 PM</option>
+                                <option value="23:00">11:00 PM</option>
+                                <option value="00:00">12:00 AM</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group">
@@ -916,11 +946,37 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="new-happy-hour-start">Start Time</label>
-                            <input type="time" id="new-happy-hour-start">
+                            <select id="new-happy-hour-start">
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">1:00 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                                <option value="18:00">6:00 PM</option>
+                                <option value="19:00">7:00 PM</option>
+                                <option value="20:00">8:00 PM</option>
+                                <option value="21:00">9:00 PM</option>
+                                <option value="22:00">10:00 PM</option>
+                                <option value="23:00">11:00 PM</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="new-happy-hour-end">End Time</label>
-                            <input type="time" id="new-happy-hour-end">
+                            <select id="new-happy-hour-end">
+                                <option value="13:00">1:00 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                                <option value="18:00">6:00 PM</option>
+                                <option value="19:00">7:00 PM</option>
+                                <option value="20:00">8:00 PM</option>
+                                <option value="21:00">9:00 PM</option>
+                                <option value="22:00">10:00 PM</option>
+                                <option value="23:00">11:00 PM</option>
+                                <option value="00:00">12:00 AM</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group">
@@ -946,7 +1002,7 @@
     
     <!-- Footer -->
     <footer>
-        <p>BeerSpy alpha v0.1.0 &copy; 2025</p>
+        <p>BeerSpy alpha v0.1.4 &copy; 2025</p>
     </footer>
 
     <script type="module">
@@ -1245,29 +1301,67 @@
                     const beersForSize = pub.beers.filter((beer) => beer.size === appState.currentSize);
                     if (beersForSize.length === 0) return;
 
-                    // Get the most recent price for each unique beer name
-                    const beerMap = new Map();
+                    // Separate beers into regular and happy hour, getting most recent for each beer name
+                    const regularBeerMap = new Map();
+                    const happyHourBeerMap = new Map();
+                    
                     beersForSize.forEach(beer => {
-                        const existingBeer = beerMap.get(beer.name);
                         const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
                         
-                        if (!existingBeer || beerTime > existingBeer.time) {
-                            beerMap.set(beer.name, { beer, time: beerTime });
+                        if (beer.is_happy_hour) {
+                            const existingHappyHour = happyHourBeerMap.get(beer.name);
+                            if (!existingHappyHour || beerTime > existingHappyHour.time) {
+                                happyHourBeerMap.set(beer.name, { beer, time: beerTime });
+                            }
+                        } else {
+                            const existingRegular = regularBeerMap.get(beer.name);
+                            if (!existingRegular || beerTime > existingRegular.time) {
+                                regularBeerMap.set(beer.name, { beer, time: beerTime });
+                            }
                         }
                     });
 
-                    const mostRecentPrices = Array.from(beerMap.values()).map(item => item.beer.price);
-                    const minRecentPrice = Math.min(...mostRecentPrices);
-                    const cheapestBeer = Array.from(beerMap.values()).find(item => item.beer.price === minRecentPrice);
+                    // Check if any happy hour beers are currently active
+                    const activeHappyHourBeers = Array.from(happyHourBeerMap.values())
+                        .filter(item => this.checkIfCurrentlyHappyHour(item.beer))
+                        .map(item => item.beer);
+
+                    let displayBeer, displayPrice, isCurrentlyHappyHour;
+
+                    if (activeHappyHourBeers.length > 0) {
+                        // Use cheapest active happy hour price
+                        displayBeer = activeHappyHourBeers.reduce((cheapest, beer) => 
+                            beer.price < cheapest.price ? beer : cheapest
+                        );
+                        displayPrice = displayBeer.price;
+                        isCurrentlyHappyHour = true;
+                    } else {
+                        // Use cheapest regular price
+                        const regularBeers = Array.from(regularBeerMap.values()).map(item => item.beer);
+                        if (regularBeers.length > 0) {
+                            displayBeer = regularBeers.reduce((cheapest, beer) => 
+                                beer.price < cheapest.price ? beer : cheapest
+                            );
+                            displayPrice = displayBeer.price;
+                            isCurrentlyHappyHour = false;
+                        } else {
+                            // Fallback to any beer if no regular prices exist
+                            const allBeers = Array.from(happyHourBeerMap.values()).map(item => item.beer);
+                            if (allBeers.length === 0) return; // Skip this pub if no beers
+                            displayBeer = allBeers.reduce((cheapest, beer) => 
+                                beer.price < cheapest.price ? beer : cheapest
+                            );
+                            displayPrice = displayBeer.price;
+                            isCurrentlyHappyHour = false;
+                        }
+                    }
                     
-                    // Determine age class
-                    const ageInDays = Utils.getDaysDifference(cheapestBeer.beer.last_updated);
+                    // Determine age class based on the beer being displayed
+                    const ageInDays = Utils.getDaysDifference(displayBeer.last_updated);
                     let ageClass = ageInDays <= 7 ? 'recent' : ageInDays <= 30 ? 'average' : 'old';
-                    
-                    const isCurrentlyHappyHour = this.checkIfCurrentlyHappyHour(cheapestBeer.beer);
 
                     const marker = L.marker([pub.lat, pub.lon], {
-                        icon: this.createCustomIcon(minRecentPrice, ageClass, isCurrentlyHappyHour),
+                        icon: this.createCustomIcon(displayPrice, ageClass, isCurrentlyHappyHour),
                     }).addTo(appState.map);
 
                     marker.pubData = pub;
@@ -1361,14 +1455,9 @@
                 const now = new Date();
                 const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();      
                 const currentTime = now.getHours() * 60 + now.getMinutes();
-                console.log(currentDay,currentTime);
                 
-                const dayNames = {
-                    'sunday': 'sunday', 'monday': 'monday', 'tuesday': 'tuesday', 
-                    'wednesday': 'wednesday', 'thursday': 'thursday', 'friday': 'friday', 'saturday': 'saturday'
-                };
-                
-                if (!beer.happy_hour_days.includes(currentDay)) {
+                // Check if today is a happy hour day
+                if (!Array.isArray(beer.happy_hour_days) || !beer.happy_hour_days.includes(currentDay)) {
                     return false;
                 }
                 
@@ -1377,9 +1466,11 @@
                 const startTime = startHour * 60 + startMin;
                 const endTime = endHour * 60 + endMin;
                 
+                // Handle same-day happy hour
                 if (startTime <= endTime) {
                     return currentTime >= startTime && currentTime <= endTime;
                 } else {
+                    // Handle happy hour that crosses midnight
                     return currentTime >= startTime || currentTime <= endTime;
                 }
             }
