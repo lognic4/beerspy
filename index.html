@@ -1237,34 +1237,39 @@
       }
 
       function processSupabaseData(beerPrices) {
-        const pubsMap = new Map();
+    const pubsMap = new Map();
 
-        beerPrices.forEach((item) => {
-          const pubKey = `${item.pub_name}-${item.lat}-${item.lon}`;
+    beerPrices.forEach((item) => {
+        const pubKey = `${item.pub_name}-${item.lat}-${item.lon}`;
 
-          if (!pubsMap.has(pubKey)) {
+        if (!pubsMap.has(pubKey)) {
             pubsMap.set(pubKey, {
-              id: pubsMap.size + 1,
-              name: item.pub_name,
-              address: item.location || "",
-              lat: item.lat,
-              lon: item.lon,
-              beers: [],
+                id: pubsMap.size + 1,
+                name: item.pub_name,
+                address: item.location || "",
+                lat: item.lat,
+                lon: item.lon,
+                beers: [],
             });
-          }
+        }
 
-          const pub = pubsMap.get(pubKey);
-          pub.beers.push({
+        const pub = pubsMap.get(pubKey);
+        pub.beers.push({
             name: item.beer_name,
             size: item.size,
             price: item.price,
             last_updated: item.last_updated,
-          });
+            // ✅ ADD THESE MISSING FIELDS:
+            is_happy_hour: item.is_happy_hour || false,
+            happy_hour_start: item.happy_hour_start,
+            happy_hour_end: item.happy_hour_end,
+            happy_hour_days: item.happy_hour_days
         });
+    });
 
-        pubs = Array.from(pubsMap.values());
-        console.log("Processed pubs:", pubs);
-      }
+    pubs = Array.from(pubsMap.values());
+    console.log("Processed pubs:", pubs);
+}
 
       // =====================================
       // UPDATE SUPABASE DATABASE
@@ -1778,7 +1783,7 @@ if (searchInput && resultsDiv) {
       } catch (error) {
         console.error("❌ Search error:", error);
         resultsDiv.innerHTML = '<div class="search-item">❌ Search error - check console</div>';
-        resultsDiv.style.display = "block";
+        resultsDiv.classList.add('show');
       }
     }, 300);
   });
