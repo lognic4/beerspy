@@ -837,6 +837,36 @@
                         <label for="new-beer-price">Price (AUD)</label>
                         <input type="number" id="new-beer-price" min="0" step="0.01" placeholder="0.00">
                     </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="new-is-happy-hour"> This is a Happy Hour price!
+                </label>
+            </div>
+
+            <div id="new-happy-hour-details" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new-happy-hour-start">Start Time</label>
+                        <input type="time" id="new-happy-hour-start">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-happy-hour-end">End Time</label>
+                        <input type="time" id="new-happy-hour-end">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="new-happy-hour-days">Days</label>
+                    <select id="new-happy-hour-days" multiple>
+                        <option value="monday">Monday</option>
+                        <option value="tuesday">Tuesday</option>
+                        <option value="wednesday">Wednesday</option>
+                        <option value="thursday">Thursday</option>
+                        <option value="friday">Friday</option>
+                        <option value="saturday">Saturday</option>
+                        <option value="sunday">Sunday</option>
+                    </select>
+                </div>
+            </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1116,6 +1146,7 @@
       // GEOCODING FUNCTION
       // =====================================
       async function geocodeAddress(address) {
+        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
         const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           address
         )}&limit=1`;
@@ -1508,84 +1539,83 @@
 // Remove the old find location button handler since we don't need it anymore
 
         // Submit new pub
-        if (submitPubBtn) {
-          submitPubBtn.addEventListener("click", async function () {
-            const nameInput = document.getElementById("pub-name");
-            const addressInput = document.getElementById("pub-address");
-            const latInput = document.getElementById("pub-lat");
-            const lonInput = document.getElementById("pub-lon");
-            const beerNameInput = document.getElementById("beer-name");
-            const beerSizeInput = document.getElementById("beer-size");
-            const beerPriceInput = document.getElementById("beer-price");
+        // Submit new pub - FIXED VERSION
+if (submitPubBtn) {
+  submitPubBtn.addEventListener("click", async function () {
+    const nameInput = document.getElementById("pub-name");
+    const addressInput = document.getElementById("pub-address");
+    const latInput = document.getElementById("pub-lat");
+    const lonInput = document.getElementById("pub-lon");
+    const beerCategoryInput = document.getElementById("beer-category"); // ✅ FIXED: was "beer-name"
+    const beerSizeInput = document.getElementById("beer-size");
+    const beerPriceInput = document.getElementById("beer-price");
 
-            if (!nameInput || !addressInput || !latInput || !lonInput || 
-                !beerNameInput || !beerSizeInput || !beerPriceInput) {
-              if (errorMessage) errorMessage.innerText = "Required form elements not found";
-              return;
-            }
-            
+    if (!nameInput || !addressInput || !latInput || !lonInput || 
+        !beerCategoryInput || !beerSizeInput || !beerPriceInput) {
+      if (errorMessage) errorMessage.innerText = "Required form elements not found";
+      return;
+    }
 
-            const name = nameInput.value.trim();
-            const address = addressInput.value.trim();
-            const lat = latInput.value.trim();
-            const lon = lonInput.value.trim();
-            const beerCategory = document.getElementById("beer-category").value;
-            const beerSize = beerSizeInput.value;
-            const beerPrice = parseFloat(beerPriceInput.value);
-            const isHappyHour = document.getElementById("is-happy-hour").checked;
-            const happyHourStart = document.getElementById("happy-hour-start").value;
-            const happyHourEnd = document.getElementById("happy-hour-end").value;
-            const happyHourDaysSelect = document.getElementById("happy-hour-days");
-            const happyHourDays = Array.from(happyHourDaysSelect.selectedOptions).map(opt => opt.value);
+    const name = nameInput.value.trim();
+    const address = addressInput.value.trim();
+    const lat = latInput.value.trim();
+    const lon = lonInput.value.trim();
+    const beerCategory = beerCategoryInput.value; // ✅ FIXED: using beerCategoryInput
+    const beerSize = beerSizeInput.value;
+    const beerPrice = parseFloat(beerPriceInput.value);
+    const isHappyHour = document.getElementById("is-happy-hour").checked;
+    const happyHourStart = document.getElementById("happy-hour-start").value;
+    const happyHourEnd = document.getElementById("happy-hour-end").value;
+    const happyHourDaysSelect = document.getElementById("happy-hour-days");
+    const happyHourDays = Array.from(happyHourDaysSelect.selectedOptions).map(opt => opt.value);
 
-            const beerData = { 
-                name: beerCategory, 
-                size: beerSize, 
-                price: beerPrice,
-                is_happy_hour: isHappyHour,
-                happy_hour_start: isHappyHour ? happyHourStart : null,
-                happy_hour_end: isHappyHour ? happyHourEnd : null,
-                happy_hour_days: isHappyHour ? happyHourDays : null
-            };
-            
+    const beerData = { 
+        name: beerCategory, 
+        size: beerSize, 
+        price: beerPrice,
+        is_happy_hour: isHappyHour,
+        happy_hour_start: isHappyHour ? happyHourStart : null,
+        happy_hour_end: isHappyHour ? happyHourEnd : null,
+        happy_hour_days: isHappyHour ? happyHourDays : null
+    };
 
-            if (errorMessage) errorMessage.innerText = "";
+    if (errorMessage) errorMessage.innerText = "";
 
-            if (!name) {
-              if (errorMessage) errorMessage.innerText = "Pub name is required";
-              return;
-            }
-            if (!address) {
-              if (errorMessage) errorMessage.innerText = "Address is required";
-              return;
-            }
-            if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
-              if (errorMessage) errorMessage.innerText = "Please validate the location before submitting";
-              return;
-            }
-            if (!beerCategory || !beerSize || !beerPrice || isNaN(beerPrice)) {
-              if (errorMessage) errorMessage.innerText = "Please enter valid beer details";
-              return;
-            }
+    if (!name) {
+      if (errorMessage) errorMessage.innerText = "Pub name is required";
+      return;
+    }
+    if (!address) {
+      if (errorMessage) errorMessage.innerText = "Address is required";
+      return;
+    }
+    if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+      if (errorMessage) errorMessage.innerText = "Please validate the location before submitting";
+      return;
+    }
+    if (!beerCategory || !beerSize || !beerPrice || isNaN(beerPrice)) {
+      if (errorMessage) errorMessage.innerText = "Please enter valid beer details";
+      return;
+    }
 
-            const newPub = {
-              id: pubs.length + 1,
-              name,
-              address,
-              lat: parseFloat(lat),
-              lon: parseFloat(lon),
-              beers: [beerData],
-            };
+    const newPub = {
+      id: pubs.length + 1,
+      name,
+      address,
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      beers: [beerData],
+    };
 
-            try {
-              await new Promise((resolve) => setTimeout(resolve, 500));
-              await updatePubInDatabase(newPub);
-              if (modal) modal.style.display = "none";
-            } catch (err) {
-              if (errorMessage) errorMessage.innerText = `Failed to save pub: ${err.message}`;
-            }
-          });
-        }
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await updatePubInDatabase(newPub);
+      if (modal) modal.style.display = "none";
+    } catch (err) {
+      if (errorMessage) errorMessage.innerText = `Failed to save pub: ${err.message}`;
+    }
+  });
+}
 
         // Search input handler
 // Enhanced search input handler with live geocoding
@@ -2046,107 +2076,130 @@ document.addEventListener("click", function(e) {
       // Variables for "Submit New Price" modal
       let currentPubForPriceUpdate = null;
 
+      
       function setupSubmitPriceModal() {
-        const submitPriceModal = document.getElementById("submit-price-modal");
-        const closeSubmitPriceBtn = document.getElementById("close-submit-price");
-        const cancelSubmitPriceBtn = document.getElementById("cancel-submit-price");
-        const submitPriceBtn = document.getElementById("submit-price-btn");
+    const submitPriceModal = document.getElementById("submit-price-modal");
+    const closeSubmitPriceBtn = document.getElementById("close-submit-price");
+    const cancelSubmitPriceBtn = document.getElementById("cancel-submit-price");
+    const submitPriceBtn = document.getElementById("submit-price-btn");
 
-        if (closeSubmitPriceBtn && submitPriceModal) {
-          closeSubmitPriceBtn.onclick = () => {
+    if (closeSubmitPriceBtn && submitPriceModal) {
+        closeSubmitPriceBtn.onclick = () => {
             submitPriceModal.style.display = "none";
-          };
-        }
+        };
+    }
 
-        if (cancelSubmitPriceBtn && submitPriceModal) {
-          cancelSubmitPriceBtn.onclick = () => {
+    if (cancelSubmitPriceBtn && submitPriceModal) {
+        cancelSubmitPriceBtn.onclick = () => {
             submitPriceModal.style.display = "none";
-          };
-        }
+        };
+    }
 
-        if (submitPriceBtn) {
+    if (submitPriceBtn) {
         submitPriceBtn.onclick = async () => {
             if (!currentPubForPriceUpdate) {
-            alert("No pub selected.");
-            return;
+                alert("No pub selected.");
+                return;
             }
 
             let hasUpdates = false;
 
-            // Handle existing beer price update
+            // Handle existing beer price update - GET VALUES FROM FORM
             const existingBeerSelect = document.getElementById("existing-beer-select");
             const existingBeerSizeSelect = document.getElementById("existing-beer-size-select");
             const existingBeerPriceInput = document.getElementById("existing-beer-price");
 
-            if (existingBeerSelect && existingBeerSizeSelect && existingBeerPriceInput) {
-            const selectedBeer = existingBeerSelect.value.trim();
-            const selectedSize = existingBeerSizeSelect.value;
-            const selectedPrice = parseFloat(existingBeerPriceInput.value);
+            // FIX: Get values from form elements
+            const selectedBeer = existingBeerSelect?.value;
+            const selectedPrice = parseFloat(existingBeerPriceInput?.value);
+            const selectedSize = existingBeerSizeSelect?.value;
 
             if (selectedBeer && !isNaN(selectedPrice) && selectedPrice > 0) {
-                // Find if this beer/size combo already exists for this pub
-                const existingBeerIndex = currentPubForPriceUpdate.beers.findIndex(
-                beer => beer.name === selectedBeer && beer.size === selectedSize
-                );
+                const isExistingHappyHour = document.getElementById("existing-is-happy-hour")?.checked || false;
+                const existingHappyHourStart = document.getElementById("existing-happy-hour-start")?.value;
+                const existingHappyHourEnd = document.getElementById("existing-happy-hour-end")?.value;
+                const existingHappyHourDaysSelect = document.getElementById("existing-happy-hour-days");
+                const existingHappyHourDays = existingHappyHourDaysSelect ? Array.from(existingHappyHourDaysSelect.selectedOptions).map(opt => opt.value) : [];
 
-                if (existingBeerIndex >= 0) {
-                // Update existing beer price
-                currentPubForPriceUpdate.beers[existingBeerIndex].price = selectedPrice;
-                } else {
-                // Add new beer entry for this pub
-                currentPubForPriceUpdate.beers.push({
+                const beerData = {
                     name: selectedBeer,
                     size: selectedSize,
                     price: selectedPrice,
-                });
+                    is_happy_hour: isExistingHappyHour,
+                    happy_hour_start: isExistingHappyHour ? existingHappyHourStart : null,
+                    happy_hour_end: isExistingHappyHour ? existingHappyHourEnd : null,
+                    happy_hour_days: isExistingHappyHour ? existingHappyHourDays : null
+                };
+
+                // Find if this beer/size combo already exists for this pub
+                const existingBeerIndex = currentPubForPriceUpdate.beers.findIndex(
+                    beer => beer.name === selectedBeer && beer.size === selectedSize
+                );
+
+                if (existingBeerIndex >= 0) {
+                    // Update existing beer with all properties
+                    currentPubForPriceUpdate.beers[existingBeerIndex] = {
+                        ...currentPubForPriceUpdate.beers[existingBeerIndex],
+                        ...beerData
+                    };
+                } else {
+                    // Add new beer entry for this pub
+                    currentPubForPriceUpdate.beers.push(beerData);
                 }
                 hasUpdates = true;
             }
-            }
 
-            // Handle new beer addition (keep your existing logic)
             // Handle new beer addition
             const newBeerCategoryInput = document.getElementById("new-beer-category");
             const newBeerSizeInput = document.getElementById("new-beer-size");
             const newBeerPriceInput = document.getElementById("new-beer-price");
 
             if (newBeerCategoryInput && newBeerSizeInput && newBeerPriceInput) {
-            const newBeerCategory = newBeerCategoryInput.value;
-            const newBeerSize = newBeerSizeInput.value;
-            const newBeerPrice = parseFloat(newBeerPriceInput.value);
+                const newBeerCategory = newBeerCategoryInput.value;
+                const newBeerSize = newBeerSizeInput.value;
+                const newBeerPrice = parseFloat(newBeerPriceInput.value);
 
-            if (newBeerCategory && !isNaN(newBeerPrice) && newBeerPrice > 0) {
-                currentPubForPriceUpdate.beers.push({
-                name: newBeerCategory,
-                size: newBeerSize,
-                price: newBeerPrice,
-                });
-                hasUpdates = true;
-            }
+                if (newBeerCategory && !isNaN(newBeerPrice) && newBeerPrice > 0) {
+                    const isNewHappyHour = document.getElementById("new-is-happy-hour")?.checked || false;
+                    const newHappyHourStart = document.getElementById("new-happy-hour-start")?.value;
+                    const newHappyHourEnd = document.getElementById("new-happy-hour-end")?.value;
+                    const newHappyHourDaysSelect = document.getElementById("new-happy-hour-days");
+                    const newHappyHourDays = newHappyHourDaysSelect ? Array.from(newHappyHourDaysSelect.selectedOptions).map(opt => opt.value) : [];
+
+                    currentPubForPriceUpdate.beers.push({
+                        name: newBeerCategory,
+                        size: newBeerSize,
+                        price: newBeerPrice,
+                        is_happy_hour: isNewHappyHour,
+                        happy_hour_start: isNewHappyHour ? newHappyHourStart : null,
+                        happy_hour_end: isNewHappyHour ? newHappyHourEnd : null,
+                        happy_hour_days: isNewHappyHour ? newHappyHourDays : null
+                    });
+                    hasUpdates = true;
+                }
             }
 
             if (!hasUpdates) {
-            alert("Please enter at least one beer price update.");
-            return;
+                alert("Please enter at least one beer price update.");
+                return;
             }
 
             try {
-            await updatePubInDatabase(currentPubForPriceUpdate);
-            if (submitPriceModal) submitPriceModal.style.display = "none";
-            
-            // Clear form fields
-            // Clear form fields
-            if (existingBeerSelect) existingBeerSelect.value = "";
-            if (existingBeerPriceInput) existingBeerPriceInput.value = "";
-            if (newBeerCategoryInput) newBeerCategoryInput.value = "";
-            if (newBeerPriceInput) newBeerPriceInput.value = "";
+                await updatePubInDatabase(currentPubForPriceUpdate);
+                if (submitPriceModal) submitPriceModal.style.display = "none";
+                
+                // Clear form fields
+                if (existingBeerSelect) existingBeerSelect.value = "";
+                if (existingBeerPriceInput) existingBeerPriceInput.value = "";
+                if (newBeerCategoryInput) newBeerCategoryInput.value = "";
+                if (newBeerPriceInput) newBeerPriceInput.value = "";
             } catch (error) {
-            console.error("Failed to update pub prices:", error);
-            alert("Failed to update pub prices. Please try again.");
+                console.error("Failed to update pub prices:", error);
+                alert("Failed to update pub prices. Please try again.");
             }
         };
-        }
-      }
+    }
+}
 
       // Open "Submit New Price" modal and populate beers
 
@@ -2202,7 +2255,51 @@ document.addEventListener("click", function(e) {
         <label for="existing-beer-price">Price (AUD)</label>
         <input type="number" id="existing-beer-price" min="0" step="0.01" placeholder="0.00">
         </div>
+        
+        <!-- Add Happy Hour fields -->
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="existing-is-happy-hour"> This is a Happy Hour price!
+            </label>
+        </div>
+
+        <div id="existing-happy-hour-details" style="display: none;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="existing-happy-hour-start">Start Time</label>
+                    <input type="time" id="existing-happy-hour-start">
+                </div>
+                <div class="form-group">
+                    <label for="existing-happy-hour-end">End Time</label>
+                    <input type="time" id="existing-happy-hour-end">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="existing-happy-hour-days">Days</label>
+                <select id="existing-happy-hour-days" multiple>
+                    <option value="monday">Monday</option>
+                    <option value="tuesday">Tuesday</option>
+                    <option value="wednesday">Wednesday</option>
+                    <option value="thursday">Thursday</option>
+                    <option value="friday">Friday</option>
+                    <option value="saturday">Saturday</option>
+                    <option value="sunday">Sunday</option>
+                </select>
+            </div>
+        </div>
     `;
+
+    // Add event listener for the existing happy hour checkbox
+    setTimeout(() => {
+        const existingHappyHourCheckbox = document.getElementById("existing-is-happy-hour");
+        const existingHappyHourDetails = document.getElementById("existing-happy-hour-details");
+        
+        if (existingHappyHourCheckbox && existingHappyHourDetails) {
+            existingHappyHourCheckbox.addEventListener("change", function() {
+                existingHappyHourDetails.style.display = this.checked ? "block" : "none";
+            });
+        }
+    }, 100);
 
     // Populate with beers from THIS pub only
     populateBeerDropdownForPub(pub);
