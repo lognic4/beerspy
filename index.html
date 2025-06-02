@@ -225,21 +225,38 @@
         
         /* ======== Search Bar ======== */
         .search-container {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            z-index: 1000;
-            width: 300px;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .search-bar {
-            display: flex;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
-            border-radius: 4px;
-            overflow: hidden;
-        }
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 1000;
+    width: 300px;
+}
+
+.search-bar {
+    display: flex;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    border-radius: 0 0 4px 4px;
+    z-index: 1001;
+    display: none;
+}
+
+.search-results.show {
+    display: block !important;
+}
         
         .search-bar input {
             flex-grow: 1;
@@ -260,25 +277,7 @@
         .search-btn:hover {
             background: var(--secondary-dark);
         }
-        
-        .search-results {
-            position: absolute;
-            width: 100%;
-            max-height: 300px;
-            overflow-y: auto;
-            background: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            border-radius: 0 0 4px 4px;
-            margin-top: 1px;
-            display: none;
-            z-index: 1001;
-        }
 
-        .search-results.show {
-            display: block !important;
-            background: white !important;
-            opacity: 1 !important;
-        }
 
 
         .search-item {
