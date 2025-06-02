@@ -1831,8 +1831,8 @@ document.addEventListener("click", function(e) {
         const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         const lastUpdatedDate = mostRecentUpdate 
-        ? mostRecentUpdate.toLocaleString('en-AU', { hour12: false, timeZone })
-        : new Date().toLocaleString('en-AU', { hour12: false, timeZone });
+        ? mostRecentUpdate.toLocaleString()
+        : new Date().toLocaleString();
 
         content += `
             </table>
