@@ -295,7 +295,51 @@
             text-align: center;
             min-width: 60px;
         }
-        
+
+                .address-search-container {
+            position: relative;
+        }
+
+        .address-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .address-result-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .address-result-item:hover {
+            background: #f8f9fa;
+        }
+
+        .address-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .address-result-item .place-name {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .address-result-item .place-address {
+            font-size: 0.9em;
+            color: var(--text-medium);
+            margin-top: 2px;
+        }
+                
         /* ======== Pub Info Popup ======== */
         .pub-popup {
             min-width: 240px;
@@ -638,12 +682,6 @@
                 </button>
             </div>
             
-            <div class="control-section">
-                <h3>Search</h3>
-                <div class="search-box">
-                    <input type="text" id="search-nearby" placeholder="Search nearby for pubs...">
-                </div>
-            </div>
             
             <div class="control-section stats-container">
                 <div class="stat-card">
@@ -715,17 +753,13 @@
                     <input type="text" id="pub-name" required placeholder="Enter pub name">
                 </div>
                 
-                <div class="form-group">
-                    <label for="pub-address">Address *</label>
-                    <div class="search-geocode">
-                        <div class="form-group">
-                            <input type="text" id="pub-address" required placeholder="Enter address">
-                        </div>
-                        <button id="find-location">
-                            <i class="fas fa-location-arrow"></i>
-                        </button>
-                    </div>
+            <div class="form-group">
+                <label for="pub-address">Address *</label>
+                <div class="address-search-container">
+                    <input type="text" id="pub-address" required placeholder="Start typing an address...">
+                    <div class="address-results" id="address-results"></div>
                 </div>
+            </div>
                 
                 <div class="form-row">
                     <div class="form-group">
@@ -1126,33 +1160,101 @@
         }
 
         // Geocode address to get coordinates
-        if (findLocationBtn) {
-          findLocationBtn.addEventListener("click", async function () {
-            const btn = this;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.disabled = true;
-            if (errorMessage) errorMessage.innerText = "";
+        // Live address search
+        const addressInput = document.getElementById("pub-address");
+        const addressResults = document.getElementById("address-results");
+        let searchTimeout;
 
-            try {
-              const addressInput = document.getElementById("pub-address");
-              if (!addressInput) throw new Error("Address input not found");
-              
-              const address = addressInput.value.trim();
-              if (!address) {
-                throw new Error("Please enter an address");
-              }
-              const success = await geocodeAddress(address);
-              if (!success) {
-                throw new Error("Location not found");
-              }
-            } catch (err) {
-              if (errorMessage) errorMessage.innerText = err.message;
-            } finally {
-              btn.innerHTML = '<i class="fas fa-location-arrow"></i>';
-              btn.disabled = false;
+        if (addressInput && addressResults) {
+        addressInput.addEventListener("input", function () {
+            const query = this.value.trim();
+            
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 3) {
+            addressResults.style.display = "none";
+            return;
             }
-          });
+            
+            // Debounce the search
+            searchTimeout = setTimeout(async () => {
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Melbourne, Australia")}&limit=5&addressdetails=1`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                addressResults.innerHTML = data.map(place => `
+                    <div class="address-result-item" data-lat="${place.lat}" data-lon="${place.lon}" data-name="${place.name || place.display_name.split(',')[0]}" data-address="${place.display_name}">
+                    <div class="place-name">${place.name || place.display_name.split(',')[0]}</div>
+                    <div class="place-address">${place.display_name}</div>
+                    </div>
+                `).join('');
+                
+                addressResults.style.display = "block";
+                
+                // Add click handlers
+                addressResults.querySelectorAll('.address-result-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                    const lat = parseFloat(this.dataset.lat);
+                    const lon = parseFloat(this.dataset.lon);
+                    const name = this.dataset.name;
+                    const address = this.dataset.address;
+                    
+                    // Check for duplicates
+                    const duplicate = pubs.find(pub => 
+                        Math.abs(pub.lat - lat) < 0.001 && 
+                        Math.abs(pub.lon - lon) < 0.001
+                    );
+                    
+                    if (duplicate) {
+                        if (errorMessage) {
+                        errorMessage.style.display = "block";
+                        errorMessage.innerText = `This location already exists as "${duplicate.name}"`;
+                        }
+                        return;
+                    }
+                    
+                    // Clear any previous errors
+                    if (errorMessage) {
+                        errorMessage.style.display = "none";
+                        errorMessage.innerText = "";
+                    }
+                    
+                    // Fill in the form
+                    document.getElementById("pub-name").value = name;
+                    addressInput.value = address;
+                    document.getElementById("pub-lat").value = lat;
+                    document.getElementById("pub-lon").value = lon;
+                    
+                    // Update map view
+                    map.setView([lat, lon], 16);
+                    
+                    // Hide results
+                    addressResults.style.display = "none";
+                    });
+                });
+                } else {
+                addressResults.innerHTML = '<div class="address-result-item">No locations found</div>';
+                addressResults.style.display = "block";
+                }
+            } catch (error) {
+                console.error("Address search error:", error);
+                addressResults.style.display = "none";
+            }
+            }, 300); // 300ms debounce
+        });
+        
+        // Hide results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!addressInput.contains(e.target) && !addressResults.contains(e.target)) {
+            addressResults.style.display = "none";
+            }
+        });
         }
+
+// Remove the old find location button handler since we don't need it anymore
 
         // Submit new pub
         if (submitPubBtn) {
