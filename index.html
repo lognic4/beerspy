@@ -1329,9 +1329,16 @@
           `;
         });
 
-        const lastUpdatedDate = beers[0]?.last_updated
-          ? new Date(beers[0].last_updated).toLocaleDateString()
-          : new Date().toLocaleDateString();
+        const mostRecentUpdate = beers.reduce((latest, beer) => {
+        if (!beer.last_updated) return latest;
+        const beerDate = new Date(beer.last_updated);
+        return !latest || beerDate > latest ? beerDate : latest;
+        }, null);
+
+       
+        const lastUpdatedDate = mostRecentUpdate 
+        ? `${mostRecentUpdate.toLocaleDateString()} at ${mostRecentUpdate.toLocaleTimeString('en-AU', { hour12: false })}`
+        : `${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString('en-AU', { hour12: false })}`;
 
         content += `
             </table>
