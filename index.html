@@ -1406,108 +1406,175 @@
         }
 
         if (submitPriceBtn) {
-          submitPriceBtn.onclick = async () => {
+        submitPriceBtn.onclick = async () => {
             if (!currentPubForPriceUpdate) {
-              alert("No pub selected.");
-              return;
+            alert("No pub selected.");
+            return;
             }
 
-            const existingBeersList = document.getElementById("existing-beers-list");
-            if (existingBeersList) {
-              // Update existing beer prices
-              const priceInputs = existingBeersList.querySelectorAll(".beer-price-input");
-              priceInputs.forEach((input) => {
-                const index = parseInt(input.dataset.index);
-                const newPrice = parseFloat(input.value);
-                if (!isNaN(newPrice) && currentPubForPriceUpdate.beers[index]) {
-                  currentPubForPriceUpdate.beers[index].price = newPrice;
+            let hasUpdates = false;
+
+            // Handle existing beer price update
+            const existingBeerSelect = document.getElementById("existing-beer-select");
+            const existingBeerSizeSelect = document.getElementById("existing-beer-size-select");
+            const existingBeerPriceInput = document.getElementById("existing-beer-price");
+
+            if (existingBeerSelect && existingBeerSizeSelect && existingBeerPriceInput) {
+            const selectedBeer = existingBeerSelect.value.trim();
+            const selectedSize = existingBeerSizeSelect.value;
+            const selectedPrice = parseFloat(existingBeerPriceInput.value);
+
+            if (selectedBeer && !isNaN(selectedPrice) && selectedPrice > 0) {
+                // Find if this beer/size combo already exists for this pub
+                const existingBeerIndex = currentPubForPriceUpdate.beers.findIndex(
+                beer => beer.name === selectedBeer && beer.size === selectedSize
+                );
+
+                if (existingBeerIndex >= 0) {
+                // Update existing beer price
+                currentPubForPriceUpdate.beers[existingBeerIndex].price = selectedPrice;
+                } else {
+                // Add new beer entry for this pub
+                currentPubForPriceUpdate.beers.push({
+                    name: selectedBeer,
+                    size: selectedSize,
+                    price: selectedPrice,
+                });
                 }
-              });
+                hasUpdates = true;
+            }
             }
 
-            // Add new beer if specified
+            // Handle new beer addition (keep your existing logic)
             const newBeerNameInput = document.getElementById("new-beer-name");
             const newBeerSizeInput = document.getElementById("new-beer-size");
             const newBeerPriceInput = document.getElementById("new-beer-price");
 
             if (newBeerNameInput && newBeerSizeInput && newBeerPriceInput) {
-              const newBeerName = newBeerNameInput.value.trim();
-              const newBeerSize = newBeerSizeInput.value;
-              const newBeerPrice = parseFloat(newBeerPriceInput.value);
+            const newBeerName = newBeerNameInput.value.trim();
+            const newBeerSize = newBeerSizeInput.value;
+            const newBeerPrice = parseFloat(newBeerPriceInput.value);
 
-              if (newBeerName && !isNaN(newBeerPrice) && newBeerPrice > 0) {
+            if (newBeerName && !isNaN(newBeerPrice) && newBeerPrice > 0) {
                 currentPubForPriceUpdate.beers.push({
-                  name: newBeerName,
-                  size: newBeerSize,
-                  price: newBeerPrice,
+                name: newBeerName,
+                size: newBeerSize,
+                price: newBeerPrice,
                 });
-              }
+                hasUpdates = true;
+            }
+            }
+
+            if (!hasUpdates) {
+            alert("Please enter at least one beer price update.");
+            return;
             }
 
             try {
-              await updatePubInDatabase(currentPubForPriceUpdate);
-              if (submitPriceModal) submitPriceModal.style.display = "none";
+            await updatePubInDatabase(currentPubForPriceUpdate);
+            if (submitPriceModal) submitPriceModal.style.display = "none";
+            
+            // Clear form fields
+            if (existingBeerSelect) existingBeerSelect.value = "";
+            if (existingBeerPriceInput) existingBeerPriceInput.value = "";
+            if (newBeerNameInput) newBeerNameInput.value = "";
+            if (newBeerPriceInput) newBeerPriceInput.value = "";
             } catch (error) {
-              console.error("Failed to update pub prices:", error);
-              alert("Failed to update pub prices. Please try again.");
+            console.error("Failed to update pub prices:", error);
+            alert("Failed to update pub prices. Please try again.");
             }
-          };
+        };
         }
       }
 
       // Open "Submit New Price" modal and populate beers
-      function openSubmitPriceModal(pub) {
-        const submitPriceModal = document.getElementById("submit-price-modal");
-        const existingBeersList = document.getElementById("existing-beers-list");
+
+        async function fetchUniqueBeerNames() {
+        try {
+            if (testMode) {
+            return ["Mega Beer", "Hoppy IPA", "Golden Ale", "IPA Special", "Stout"];
+            }
+
+            const { data, error } = await sbClient
+            .from("beer_prices")
+            .select("beer_name")
+            .order("beer_name");
+
+            if (error) {
+            console.error("Error fetching beer names:", error);
+            return [];
+            }
+
+            // Get unique beer names
+            const uniqueBeers = [...new Set(data.map(item => item.beer_name))];
+            return uniqueBeers;
+        } catch (err) {
+            console.error("Error fetching unique beer names:", err);
+            return [];
+        }
+    }
+
+    function openSubmitPriceModal(pub) {
+    const submitPriceModal = document.getElementById("submit-price-modal");
+    const existingBeersList = document.getElementById("existing-beers-list");
+    
+    if (!submitPriceModal || !existingBeersList) return;
+    if (!pub) return;
+
+    // Clear and setup the form for selecting existing beers
+    existingBeersList.innerHTML = `
+        <h3>Update Existing Beer Price</h3>
+        <div class="form-row">
+        <div class="form-group">
+            <label for="existing-beer-select">Select Beer</label>
+            <select id="existing-beer-select">
+            <option value="">-- Select a beer --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="existing-beer-size-select">Size</label>
+            <select id="existing-beer-size-select">
+            <option value="pint">Pint (568ml)</option>
+            <option value="schooner">Schooner (425ml)</option>
+            <option value="pot">Pot (285ml)</option>
+            <option value="bottle">Bottle</option>
+            <option value="can">Can</option>
+            </select>
+        </div>
+        </div>
+        <div class="form-group">
+        <label for="existing-beer-price">Price (AUD)</label>
+        <input type="number" id="existing-beer-price" min="0" step="0.01" placeholder="0.00">
+        </div>
+    `;
+
+    // Populate the beer dropdown
+    populateBeerDropdown();
+    
+    submitPriceModal.style.display = "flex";
+    }
+
+    async function populateBeerDropdown() {
+    const beerSelect = document.getElementById("existing-beer-select");
+    if (!beerSelect) return;
+
+    try {
+        const uniqueBeers = await fetchUniqueBeerNames();
         
-        if (!submitPriceModal || !existingBeersList) return;
-        if (!pub || !pub.beers) return;
-
-        existingBeersList.innerHTML = "";
-
-        pub.beers.forEach((beer, index) => {
-          const div = document.createElement("div");
-          div.classList.add("form-row");
-          div.innerHTML = `
-            <div class="form-group" style="flex: 2;">
-              <label>Beer Name</label>
-              <input type="text" value="${beer.name}" readonly>
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label>Size</label>
-              <input type="text" value="${beer.size}" readonly>
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label>Price (AUD)</label>
-              <input
-                type="number"
-                class="beer-price-input"
-                min="0"
-                step="0.01"
-                value="${beer.price.toFixed(2)}"
-                data-index="${index}"
-                data-beer-name="${beer.name}"
-                data-beer-size="${beer.size}"
-              >
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <button type="button" data-beer-id="${index}" class="change-btn">
-                <i class="fas fa-edit"></i>
-              </button>
-            </div>
-          `;
-          existingBeersList.appendChild(div);
-
-          const changeBtn = div.querySelector(".change-btn");
-          if (changeBtn) {
-            changeBtn.addEventListener("click", () => {
-              alert(`Change price for ${beer.name} (${beer.size})`);
-            });
-          }
+        // Clear existing options except the first one
+        beerSelect.innerHTML = '<option value="">-- Select a beer --</option>';
+        
+        // Add beer options
+        uniqueBeers.forEach(beerName => {
+        const option = document.createElement("option");
+        option.value = beerName;
+        option.textContent = beerName;
+        beerSelect.appendChild(option);
         });
-
-        submitPriceModal.style.display = "flex";
-      }
+    } catch (error) {
+        console.error("Error populating beer dropdown:", error);
+    }
+    }
 
     } catch (error) {
       console.error("BeerSpy initialization error:", error);
