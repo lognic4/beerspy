@@ -1361,6 +1361,7 @@
                 const now = new Date();
                 const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();      
                 const currentTime = now.getHours() * 60 + now.getMinutes();
+                console.log(currentDay,currentTime);
                 
                 const dayNames = {
                     'sunday': 'sunday', 'monday': 'monday', 'tuesday': 'tuesday', 
