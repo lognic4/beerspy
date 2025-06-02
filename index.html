@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -286,7 +285,7 @@
         /* ======== Marker Styles ======== */
         .price-tooltip {
             padding: 6px 10px;
-            background: rgba(255, 255,  #fff, 0.95);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 4px;
             border: 1px solid #ddd;
             box-shadow: 0 1px 5px rgba(0,0,0,0.1);
@@ -572,23 +571,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Overlay to capture clicks */
-        #map-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5;
-            cursor: default;
-        }
-
-        /* Disabled button style */
-        .disabled {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
         /* Statistics header */
         #stats-header {
             position: absolute;
@@ -598,29 +580,29 @@
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 15px;
         }
     
     </style>
 </head>
 <body>
-        <!-- Overlay to capture clicks on map -->
-    <div id="map-overlay" title="Click here to close marker information"></div>
-
     <!-- Statistics header -->
     <div id="stats-header">
         <div class="stat-card">
-            <div class="value" id="pubs-count">0</div>
+            <div class="value" id="pubs-count-header">0</div>
             <div class="label">Pubs</div>
         </div>
         <div class="stat-card">
-            <div class="value" id="beers-count">0</div>
+            <div class="value" id="beers-count-header">0</div>
             <div class="label">Beers</div>
         </div>
         <div class="stat-card">
-            <div class="value" id="avg-price">-</div>
+            <div class="value" id="avg-price-header">-</div>
             <div class="label">Avg Price</div>
         </div>
     </div>
+    
     <!-- Header Section -->
     <header>
         <div class="container">
@@ -678,15 +660,15 @@
             
             <div class="control-section stats-container">
                 <div class="stat-card">
-                    <div class="value" id="pubs-count">12</div>
+                    <div class="value" id="pubs-count">0</div>
                     <div class="label">Pubs</div>
                 </div>
                 <div class="stat-card">
-                    <div class="value" id="beers-count">58</div>
+                    <div class="value" id="beers-count">0</div>
                     <div class="label">Beers</div>
                 </div>
                 <div class="stat-card">
-                    <div class="value" id="avg-price">$12.80</div>
+                    <div class="value" id="avg-price">-</div>
                     <div class="label">Avg Price</div>
                 </div>
             </div>
@@ -694,52 +676,53 @@
     </div>
 
     <!-- Submit New Price Modal -->
-<div class="modal" id="submit-price-modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2>Submit New Price</h2>
-      <button class="close-btn" id="close-submit-price">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div id="existing-beers-list"></div>
-      <hr>
-      <h3>Add New Beer</h3>
-      <div class="form-group">
-        <label for="new-beer-name">New Beer Name</label>
-        <input type="text" id="new-beer-name" placeholder="Enter new beer name">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="new-beer-size">Size</label>
-          <select id="new-beer-size">
-            <option value="pint">Pint</option>
-            <option value="schooner">Schooner</option>
-            <option value="can">Can</option>
-            <option value="jug">Jug</option>
-          </select>
+    <div class="modal" id="submit-price-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Submit New Price</h2>
+                <button class="close-btn" id="close-submit-price">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="existing-beers-list"></div>
+                <hr>
+                <h3>Add New Beer</h3>
+                <div class="form-group">
+                    <label for="new-beer-name">New Beer Name</label>
+                    <input type="text" id="new-beer-name" placeholder="Enter new beer name">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new-beer-size">Size</label>
+                        <select id="new-beer-size">
+                            <option value="pint">Pint</option>
+                            <option value="schooner">Schooner</option>
+                            <option value="pot">Pot</option>
+                            <option value="can">Can</option>
+                            <option value="jug">Jug</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-beer-price">Price (AUD)</label>
+                        <input type="number" id="new-beer-price" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="cancel-submit-price">Cancel</button>
+                <button class="modal-btn btn-submit" id="submit-price-btn">Submit Price</button>
+            </div>
         </div>
-        <div class="form-group">
-          <label for="new-beer-price">Price (AUD)</label>
-          <input type="number" id="new-beer-price" min="0" step="0.01" placeholder="0.00">
-        </div>
-      </div>
     </div>
-    <div class="modal-footer">
-        <button class="modal-btn btn-cancel" id="cancel-submit-price">Cancel</button>
-        <button class="modal-btn btn-submit" id="submit-price-btn">Submit Price</button>
-    </div>
-  </div>
-</div>
     
     <!-- Add Pub Modal -->
     <div class="modal" id="add-pub-modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Add New Pub</h2>
-                <button class="close-btn">&times;</button>
+                <button class="close-btn" id="close-add-pub">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="error-message" class="error"></div>
+                <div id="error-message" class="error" style="display: none;"></div>
                 <div class="form-group">
                     <label for="pub-name">Pub Name *</label>
                     <input type="text" id="pub-name" required placeholder="Enter pub name">
@@ -794,7 +777,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn btn-cancel">Cancel</button>
+                <button class="modal-btn btn-cancel" id="cancel-add-pub">Cancel</button>
                 <button class="modal-btn btn-submit" id="submit-pub-btn">Add Pub</button>
             </div>
         </div>
@@ -820,7 +803,7 @@
   console.log("Supabase client initialized", sbClient);
 
   // Dummy data for local testing if you want to run without Supabase
-  let testMode = true; // Enable test mode to see if buttons work
+  let testMode = false; // Enable test mode to see if buttons work
   if (testMode) {
     console.log("Running in test mode - using local data only");
   }
