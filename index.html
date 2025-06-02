@@ -1619,7 +1619,7 @@
                         price: beerData.price,
                         lat: lat,
                         lon: lon,
-                        location: pub.address, // You'll need to pass this
+                        location: appState.currentPubForPriceUpdate.address,
                         last_updated: new Date().toISOString(),
                         is_happy_hour: beerData.is_happy_hour || false,
                         happy_hour_start: beerData.happy_hour_start || null,
@@ -1641,7 +1641,7 @@
                     console.error("Database update error:", err);
                     Utils.showError(`Database error: ${err.message}`);
                 }
-            }
+            },
             async updatePubInDatabase(pub) {
                 console.log("Updating pub in database:", pub);
 
@@ -2274,7 +2274,6 @@
                             beerData
                         );
                 
-                    await DataManager.updatePubInDatabase(appState.currentPubForPriceUpdate);
                     document.getElementById("submit-price-modal").style.display = "none";
                     
                     // Clear form fields
