@@ -1355,10 +1355,11 @@
         return !latest || beerDateUTC > latest ? beerDateUTC : latest;
         }, null);
 
-        // Display in local time
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
         const lastUpdatedDate = mostRecentUpdate 
-        ? `${mostRecentUpdate.toLocaleDateString(undefined, { timeZoneName: 'short' })} at ${mostRecentUpdate.toLocaleTimeString('en-AU', { hour12: false })}`
-        : `${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString('en-AU', { hour12: false })}`;
+        ? `${mostRecentUpdate.toLocaleDateString('en-AU', { timeZone })} at ${mostRecentUpdate.toLocaleTimeString('en-AU', { hour12: false, timeZone })}`
+        : `${new Date().toLocaleDateString('en-AU', { timeZone })} at ${new Date().toLocaleTimeString('en-AU', { hour12: false, timeZone })}`;
 
         content += `
             </table>
