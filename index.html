@@ -275,8 +275,11 @@
 
         .search-results.show {
             display: block !important;
+            background: white !important;
+            z-index: 1001 !important;
         }
-        
+
+
         .search-item {
             padding: 10px 15px;
             border-bottom: 1px solid #eee;
@@ -1526,8 +1529,8 @@ if (searchInput && resultsDiv) {
             });
           });
         } else {
-          resultsDiv.innerHTML = '<div class="search-item">No results found</div>';
-          resultsDiv.style.display = "block";
+            resultsDiv.innerHTML = '<div class="search-item">No results found</div>';
+            resultsDiv.classList.add('show');
         }
         
       } catch (error) {
@@ -1539,11 +1542,13 @@ if (searchInput && resultsDiv) {
   });
   
   // Hide results when clicking outside
-  document.addEventListener("click", function(e) {
-    if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
-      resultsDiv.classList.remove('show');
-    }
-  });
+// Hide results when clicking outside
+document.addEventListener("click", function(e) {
+  if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+    resultsDiv.classList.remove('show');
+    resultsDiv.style.display = "none";
+  }
+});
   
   console.log("✅ Event listener attached successfully");
 } else {
