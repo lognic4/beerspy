@@ -7,15 +7,14 @@
     
     <!-- External Dependencies -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3417/3417754.png" type="image/png">
-    
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.28.0/dist/umd/supabase.min.js"></script>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3417/3417754.png" type="image/png">
 
     <style>
-        /* ========== CSS VARIABLES & RESET ========== */
+        /* ======== CSS Variables ======== */
         :root {
             --primary: #2c3e50;
             --primary-light: #3c5975;
@@ -25,39 +24,41 @@
             --accent-dark: #d7782f;
             --warning: #e74c3c;
             --success: #27ae60;
-            --happy-hour: #ff69b4;
             --light-gray: #f5f7f9;
             --medium-gray: #ecf0f1;
             --text-dark: #2c3e50;
             --text-medium: #7f8c8d;
-            --shadow: 0 4px 15px rgba(0,0,0,0.1);
             --border-radius: 8px;
+            --box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
         }
         
+        /* ======== Base Styles ======== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Open Sans', 'Helvetica', Arial, sans-serif;
         }
         
         body {
+            font-family: 'Open Sans', 'Helvetica', Arial, sans-serif;
             background: var(--light-gray);
             color: var(--text-dark);
             min-height: 100vh;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
         }
-
-        /* ========== LAYOUT COMPONENTS ========== */
-        .header {
+        
+        /* ======== Header ======== */
+        header {
             background: var(--primary);
             color: white;
             padding: 1rem;
-            box-shadow: var(--shadow);
+            box-shadow: var(--box-shadow);
         }
         
-        .header__container {
+        .header-container {
             max-width: 1200px;
             margin: 0 auto;
             display: flex;
@@ -71,238 +72,49 @@
             gap: 12px;
         }
         
-        .logo__icon {
+        .logo .beer-icon {
             font-size: 2.2rem;
         }
         
-        .logo__title {
+        .logo h1 {
             font-size: 1.8rem;
             font-weight: 700;
-            margin: 0;
         }
         
-        .logo__subtitle {
+        .logo p {
             font-size: 1rem;
             opacity: 0.9;
-            margin: 0;
+            margin-top: 4px;
         }
-
-        .main-container {
+        
+        /* ======== Main Layout ======== */
+        #main-container {
             flex: 1;
             display: flex;
+            flex-direction: column;
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
             padding: 20px;
             gap: 20px;
         }
-
-        /* ========== MAP SECTION ========== */
-        .map-section {
+        
+        #map-container {
             flex: 1;
             position: relative;
-            height: calc(100vh - 160px);
+            height: 70vh;
             min-height: 400px;
-            box-shadow: var(--shadow);
+            box-shadow: var(--box-shadow);
             border-radius: var(--border-radius);
             overflow: hidden;
         }
         
-        .map {
+        #map {
             height: 100%;
             background: var(--light-gray);
         }
-
-        .search-container {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            z-index: 1000;
-            width: 300px;
-        }
-
-        .search-bar {
-            display: flex;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .search-bar__input {
-            flex-grow: 1;
-            padding: 12px 15px;
-            border: none;
-            font-size: 1rem;
-            outline: none;
-        }
         
-        .search-bar__button {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            width: 50px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .search-bar__button:hover {
-            background: var(--secondary-dark);
-        }
-
-        .search-results {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            background: white;
-            box-shadow: var(--shadow);
-            border-radius: 0 0 4px 4px;
-            z-index: 1001;
-            display: none;
-        }
-
-        .search-results--show {
-            display: block;
-        }
-
-        .search-item {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .search-item:hover {
-            background: #f1f5f9;
-        }
-
-        .search-item--existing {
-            background: #e8f5e8;
-            border-left: 3px solid var(--success);
-        }
-
-        .search-item--new {
-            background: #fff3cd;
-            border-left: 3px solid #ffc107;
-        }
-
-        /* ========== CONTROLS SECTION ========== */
-        .controls-section {
-            width: 300px;
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            height: fit-content;
-        }
-        
-        .control-group__title {
-            margin-bottom: 12px;
-            color: var(--primary);
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--medium-gray);
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        
-        .size-filter {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 8px;
-        }
-        
-        .size-btn {
-            padding: 10px 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: white;
-            color: var(--text-dark);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        
-        .size-btn:hover, .size-btn--active {
-            background: var(--secondary);
-            color: white;
-            border-color: var(--secondary);
-        }
-        
-        .add-pub-btn {
-            padding: 12px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .add-pub-btn:hover {
-            background: var(--accent-dark);
-        }
-        
-        .stats-container {
-            display: flex;
-            gap: 15px;
-            text-align: center;
-        }
-        
-        .stat-card {
-            flex: 1;
-            background: var(--light-gray);
-            border-radius: 4px;
-            padding: 10px;
-        }
-        
-        .stat-card__value {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .stat-card__label {
-            font-size: 0.8rem;
-            color: var(--text-medium);
-        }
-
-        /* ========== MAP MARKERS ========== */
-        .price-bubble {
-            background: var(--accent);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            font-size: 0.9rem;
-        }
-
-        .price-bubble--recent { background: var(--success); }
-        .price-bubble--average { background: #3498db; }
-        .price-bubble--old { background: var(--warning); }
-        .price-bubble--happy-hour { 
-            background: var(--happy-hour); 
-            animation: pulse-pink 2s infinite;
-        }
-
-        @keyframes pulse-pink {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.9; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
+        /* ======== User Location Marker ======== */
         .user-location-marker {
             background: none;
             border: none;
@@ -319,199 +131,247 @@
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-
-        /* ========== MODAL STYLES ========== */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
+        
+        /* ======== Controls Panel ======== */
+        #map-controls {
             width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-        }
-        
-        .modal--show {
-            display: flex;
-        }
-        
-        .modal__content {
             background: white;
             border-radius: var(--border-radius);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        .modal__header {
-            background: var(--primary);
-            color: white;
-            padding: 15px 20px;
+            padding: 20px;
+            box-shadow: var(--box-shadow);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 20px;
         }
         
-        .modal__title {
-            font-size: 1.5rem;
-            margin: 0;
+        .control-section {
+            margin-bottom: 15px;
         }
         
-        .modal__close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
+        .control-section h3 {
+            margin-bottom: 12px;
+            color: var(--primary);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        .size-filter {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+        }
+        
+        .size-btn {
+            padding: 10px 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            color: var(--text-dark);
+            font-weight: 600;
             cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-            transition: background 0.2s;
-            width: 36px;
-            height: 36px;
+            transition: var(--transition);
+            text-align: center;
+        }
+        
+        .size-btn:hover, 
+        .size-btn.active {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+        
+        #add-pub-btn {
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
         }
         
-        .modal__close:hover {
-            background: rgba(255,255,255,0.2);
+        #add-pub-btn:hover {
+            background: var(--accent-dark);
         }
         
-        .modal__body {
-            padding: 20px;
-        }
-        
-        .modal__footer {
-            padding: 15px 20px;
-            background: var(--light-gray);
+        /* ======== Statistics ======== */
+        .stats-container {
             display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        /* ========== FORM STYLES ========== */
-        .form-group {
-            margin-bottom: 20px;
+            gap: 15px;
+            text-align: center;
+            margin-top: 5px;
         }
         
-        .form-group__label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
+        .stat-card {
+            flex: 1;
+            background: var(--light-gray);
+            border-radius: 4px;
+            padding: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 1.3rem;
+            font-weight: 700;
             color: var(--primary);
         }
         
-        .form-group__input, .form-group__select {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
+        .stat-card .label {
+            font-size: 0.8rem;
+            color: var(--text-medium);
+        }
+        
+        /* ======== Search Bar ======== */
+        .search-container {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            z-index: 1000;
+            width: 300px;
+        }
+
+        .search-bar {
+            display: flex;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
             border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .search-bar input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: none;
             font-size: 1rem;
-            transition: border 0.3s;
         }
         
-        .form-group__input:focus, .form-group__select:focus {
-            outline: none;
-            border-color: var(--secondary);
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        .search-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            width: 50px;
+            cursor: pointer;
+            transition: var(--transition);
         }
         
-        .form-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .form-row .form-group {
-            flex: 1;
-            margin-bottom: 0;
+        .search-btn:hover {
+            background: var(--secondary-dark);
         }
 
-        .form-group__checkbox {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .form-group__checkbox input[type="checkbox"] {
-            width: auto;
-        }
-
-        .happy-hour-details {
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border-radius: 0 0 4px 4px;
+            z-index: 1001;
             display: none;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #e9ecef;
-            margin-bottom: 15px;
         }
 
-        .happy-hour-details--show {
+        .search-results.show {
             display: block;
         }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-weight: 600;
+
+        .search-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: var(--transition);
         }
-        
-        .btn--cancel {
-            background: white;
-            border: 1px solid #ddd;
+
+        .search-item:hover {
+            background: #f1f5f9;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item .place-name {
+            font-weight: 600;
             color: var(--text-dark);
+            margin-bottom: 2px;
+        }
+
+        .search-item .place-address {
+            font-size: 0.9em;
+            color: var(--text-medium);
+        }
+
+        .search-item .place-type {
+            font-size: 0.8em;
+            color: var(--secondary);
+            margin-top: 2px;
+            font-style: italic;
+        }
+
+        .existing-pub-indicator {
+            background: #e8f5e8;
+            border-left: 3px solid var(--success);
+        }
+
+        .new-location-indicator {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
         }
         
-        .btn--cancel:hover {
-            background: #f5f5f5;
-        }
-        
-        .btn--submit {
+        /* ======== Map Markers ======== */
+        .price-bubble {
             background: var(--accent);
             color: white;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            min-width: 45px;
+        }
+
+        .price-bubble.recent {
+            background: var(--success);
+        }
+
+        .price-bubble.average {
+            background: #3498db;
+        }
+
+        .price-bubble.old {
+            background: var(--warning);
+        }
+
+        .price-bubble.happy-hour {
+            background: #ff69b4;
+            animation: pulse-pink 2s infinite;
+        }
+
+        @keyframes pulse-pink {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
         }
         
-        .btn--submit:hover {
-            background: var(--accent-dark);
-        }
-
-        .error {
-            color: var(--warning);
-            font-weight: 600;
-            background: #fdecea;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            display: none;
-        }
-
-        .error--show {
-            display: block;
-        }
-
-        /* ========== POPUP STYLES ========== */
+        /* ======== Popups ======== */
         .pub-popup {
             min-width: 240px;
             max-width: 300px;
         }
         
-        .pub-popup__title {
+        .pub-popup h3 {
             font-size: 1.2rem;
             margin-bottom: 5px;
             color: var(--primary);
         }
         
-        .pub-popup__address {
+        .pub-popup .address {
             font-size: 0.9rem;
             color: var(--text-medium);
             margin-bottom: 15px;
@@ -543,8 +403,8 @@
             font-weight: 600;
         }
 
-        .beer-price--happy-hour {
-            background: var(--happy-hour);
+        .beer-price.happy-hour {
+            background: #ff69b4;
             color: white;
             padding: 2px 6px;
             border-radius: 3px;
@@ -559,9 +419,10 @@
         .popup-actions {
             display: flex;
             justify-content: flex-end;
+            gap: 8px;
         }
         
-        .popup-btn {
+        .add-beer-btn {
             background: var(--secondary);
             color: white;
             border: none;
@@ -569,39 +430,239 @@
             border-radius: 4px;
             cursor: pointer;
             font-weight: 600;
-            transition: background 0.3s;
+            transition: var(--transition);
         }
         
-        .popup-btn:hover {
+        .add-beer-btn:hover {
             background: var(--secondary-dark);
         }
+        
+        /* ======== Modals ======== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+        
+        .close-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .modal-body {
+            padding: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        
+        .form-group input:focus, 
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            background: var(--light-gray);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-cancel {
+            background: white;
+            border: 1px solid #ddd;
+            color: var(--text-dark);
+        }
+        
+        .btn-cancel:hover {
+            background: #f5f5f5;
+        }
+        
+        .btn-submit {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-submit:hover {
+            background: var(--accent-dark);
+        }
+        
+        .error {
+            color: var(--warning);
+            font-weight: 600;
+            background: #fdecea;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
 
-        /* ========== FOOTER ========== */
-        .footer {
+        .address-search-container {
+            position: relative;
+        }
+
+        .address-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .address-result-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .address-result-item:hover {
+            background: #f8f9fa;
+        }
+
+        .address-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .address-result-item .place-name {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .address-result-item .place-address {
+            font-size: 0.9em;
+            color: var(--text-medium);
+            margin-top: 2px;
+        }
+        
+        /* ======== Footer ======== */
+        footer {
             background: var(--primary);
             color: white;
             text-align: center;
             padding: 15px;
             margin-top: auto;
         }
+        
+        /* ======== Responsive Design ======== */
+        @media (min-width: 768px) {
+            #main-container {
+                flex-direction: row;
+            }
+            
+            #map-container {
+                height: calc(100vh - 160px);
+            }
+            
+            #map-controls {
+                width: 300px;
+                order: 2;
+            }
+        }
 
-        /* ========== RESPONSIVE DESIGN ========== */
         @media (max-width: 767px) {
-            .main-container {
-                flex-direction: column;
+            #main-container {
                 padding: 10px;
             }
             
-            .map-section {
-                height: 60vh;
-            }
-            
-            .controls-section {
-                width: 100%;
-                order: 2;
-            }
-            
             .search-container {
+                position: absolute;
+                top: 10px;
                 left: 10px;
                 right: 10px;
                 width: auto;
@@ -622,52 +683,49 @@
                 align-items: center;
                 padding: 15px;
             }
-        }
-
-        @media (min-width: 768px) {
-            .controls-section {
-                order: 2;
+            
+            .stat-card .value {
+                font-size: 1.1rem;
             }
         }
     </style>
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <div class="header__container">
+    <header>
+        <div class="header-container">
             <div class="logo">
-                <div class="logo__icon">🍺</div>
+                <div class="beer-icon">🍺</div>
                 <div>
-                    <h1 class="logo__title">BeerSpy</h1>
-                    <p class="logo__subtitle">yum yum dot com</p>
+                    <h1>BeerSpy</h1>
+                    <p>yum yum dot com</p>
                 </div>
             </div>
         </div>
     </header>
     
     <!-- Main Container -->
-    <div class="main-container">
-        <!-- Map Section -->
-        <div class="map-section">
-            <div id="map" class="map"></div>
+    <div id="main-container">
+        <!-- Map Container -->
+        <div id="map-container">
+            <div id="map"></div>
             
             <!-- Search Bar -->
             <div class="search-container">
                 <div class="search-bar">
-                    <input type="text" id="search-input" class="search-bar__input" placeholder="Search places in Melbourne...">
-                    <button class="search-bar__button"><i class="fas fa-search"></i></button>
+                    <input type="text" id="pub-search" placeholder="Search places in Melbourne...">
+                    <button class="search-btn"><i class="fas fa-search"></i></button>
                 </div>
-                <div id="search-results" class="search-results"></div>
+                <div class="search-results" id="search-results"></div>
             </div>
         </div>
         
-        <!-- Controls Section -->
-        <div class="controls-section">
-            <!-- Size Filter -->
-            <div class="control-group">
-                <h3 class="control-group__title">Beer Size</h3>
-                <div class="size-filter" id="size-filter">
-                    <button class="size-btn size-btn--active" data-size="pint">Pint</button>
+        <!-- Map Controls Panel -->
+        <div id="map-controls">
+            <div class="control-section">
+                <h3>Beer Size</h3>
+                <div class="size-filter">
+                    <button class="size-btn active" data-size="pint">Pint</button>
                     <button class="size-btn" data-size="schooner">Schooner</button>
                     <button class="size-btn" data-size="pot">Pot</button>
                     <button class="size-btn" data-size="bottle">Bottle</button>
@@ -676,214 +734,69 @@
                 </div>
             </div>
             
-            <!-- Add Pub Button -->
-            <div class="control-group">
-                <h3 class="control-group__title">Add a New Pub</h3>
-                <button id="add-pub-btn" class="add-pub-btn">
+            <div class="control-section">
+                <h3>Add a New Pub</h3>
+                <button id="add-pub-btn">
                     <i class="fas fa-plus"></i> Enter Pub Details
                 </button>
             </div>
             
-            <!-- Statistics -->
-            <div class="control-group stats-container">
+            <div class="control-section stats-container">
                 <div class="stat-card">
-                    <div class="stat-card__value" id="pubs-count">0</div>
-                    <div class="stat-card__label">Pubs</div>
+                    <div class="value" id="pubs-count">0</div>
+                    <div class="label">Pubs</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card__value" id="beers-count">0</div>
-                    <div class="stat-card__label">Beers</div>
+                    <div class="value" id="beers-count">0</div>
+                    <div class="label">Beers</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card__value" id="avg-price">-</div>
-                    <div class="stat-card__label">Avg Price</div>
+                    <div class="value" id="avg-price">-</div>
+                    <div class="label">Avg Price</div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Add Pub Modal -->
-    <div id="add-pub-modal" class="modal">
-        <div class="modal__content">
-            <div class="modal__header">
-                <h2 class="modal__title">Add New Pub</h2>
-                <button class="modal__close" id="close-add-pub">&times;</button>
+    <div class="modal" id="add-pub-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Pub</h2>
+                <button class="close-btn" id="close-add-pub">&times;</button>
             </div>
-            <div class="modal__body">
-                <div id="add-pub-error" class="error"></div>
-                <form id="add-pub-form">
-                    <div class="form-group">
-                        <label class="form-group__label" for="pub-name">Pub Name *</label>
-                        <input type="text" id="pub-name" class="form-group__input" required placeholder="Enter pub name">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-group__label" for="pub-address">Address *</label>
-                        <input type="text" id="pub-address" class="form-group__input" required placeholder="Start typing an address...">
-                        <div id="address-results" class="search-results"></div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-group__label" for="pub-lat">Latitude</label>
-                            <input type="text" id="pub-lat" class="form-group__input" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-group__label" for="pub-lon">Longitude</label>
-                            <input type="text" id="pub-lon" class="form-group__input" readonly>
-                        </div>
-                    </div>
-                    
-                    <h3>Add Initial Beer</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-group__label" for="beer-category">Beer Category *</label>
-                            <select id="beer-category" class="form-group__select" required>
-                                <option value="house">House/Cheapest</option>
-                                <option value="local">Victorian/Australian Beers</option>
-                                <option value="guinness">Guinness</option>
-                                <option value="pale-ale">Pale Ales</option>
-                                <option value="ipa">IPAs</option>
-                                <option value="lager">Lagers</option>
-                                <option value="dark">Stouts & Porters</option>
-                                <option value="specialty">Wheat/Sour/Cider</option>
-                                <option value="international">Internationals</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-group__label" for="beer-size">Size *</label>
-                            <select id="beer-size" class="form-group__select" required>
-                                <option value="pint">Pint (568ml)</option>
-                                <option value="schooner">Schooner (425ml)</option>
-                                <option value="pot">Pot (285ml)</option>
-                                <option value="bottle">Bottle</option>
-                                <option value="can">Can</option>
-                                <option value="jug">Jug</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-group__label" for="beer-price">Price (AUD) *</label>
-                        <input type="number" id="beer-price" class="form-group__input" min="0" step="0.01" required placeholder="0.00">
-                    </div>
-
-                    <!-- Happy Hour Section -->
-                    <div class="form-group__checkbox">
-                        <input type="checkbox" id="is-happy-hour">
-                        <label for="is-happy-hour">This is a Happy Hour price!</label>
-                    </div>
-
-                    <div id="happy-hour-details" class="happy-hour-details">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-group__label" for="happy-hour-start">Start Time</label>
-                                <input type="time" id="happy-hour-start" class="form-group__input">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-group__label" for="happy-hour-end">End Time</label>
-                                <input type="time" id="happy-hour-end" class="form-group__input">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-group__label" for="happy-hour-days">Days</label>
-                            <select id="happy-hour-days" class="form-group__select" multiple>
-                                <option value="monday">Monday</option>
-                                <option value="tuesday">Tuesday</option>
-                                <option value="wednesday">Wednesday</option>
-                                <option value="thursday">Thursday</option>
-                                <option value="friday">Friday</option>
-                                <option value="saturday">Saturday</option>
-                                <option value="sunday">Sunday</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal__footer">
-                <button class="btn btn--cancel" id="cancel-add-pub">Cancel</button>
-                <button class="btn btn--submit" id="submit-pub">Add Pub</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Submit Price Modal -->
-    <div id="submit-price-modal" class="modal">
-        <div class="modal__content">
-            <div class="modal__header">
-                <h2 class="modal__title">Submit New Price</h2>
-                <button class="modal__close" id="close-submit-price">&times;</button>
-            </div>
-            <div class="modal__body">
-                <div id="submit-price-error" class="error"></div>
+            <div class="modal-body">
+                <div id="error-message" class="error"></div>
                 
-                <!-- Existing Beer Update Section -->
-                <div id="existing-beer-section">
-                    <h3>Update Existing Beer Price</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-group__label" for="existing-beer-select">Select Beer</label>
-                            <select id="existing-beer-select" class="form-group__select">
-                                <option value="">-- Select a beer --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-group__label" for="existing-beer-size">Size</label>
-                            <select id="existing-beer-size" class="form-group__select">
-                                <option value="pint">Pint</option>
-                                <option value="schooner">Schooner</option>
-                                <option value="pot">Pot</option>
-                                <option value="bottle">Bottle</option>
-                                <option value="can">Can</option>
-                                <option value="jug">Jug</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-group__label" for="existing-beer-price">Price (AUD)</label>
-                        <input type="number" id="existing-beer-price" class="form-group__input" min="0" step="0.01" placeholder="0.00">
-                    </div>
-
-                    <div class="form-group__checkbox">
-                        <input type="checkbox" id="existing-is-happy-hour">
-                        <label for="existing-is-happy-hour">This is a Happy Hour price!</label>
-                    </div>
-
-                    <div id="existing-happy-hour-details" class="happy-hour-details">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-group__label" for="existing-happy-hour-start">Start Time</label>
-                                <input type="time" id="existing-happy-hour-start" class="form-group__input">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-group__label" for="existing-happy-hour-end">End Time</label>
-                                <input type="time" id="existing-happy-hour-end" class="form-group__input">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-group__label" for="existing-happy-hour-days">Days</label>
-                            <select id="existing-happy-hour-days" class="form-group__select" multiple>
-                                <option value="monday">Monday</option>
-                                <option value="tuesday">Tuesday</option>
-                                <option value="wednesday">Wednesday</option>
-                                <option value="thursday">Thursday</option>
-                                <option value="friday">Friday</option>
-                                <option value="saturday">Saturday</option>
-                                <option value="sunday">Sunday</option>
-                            </select>
-                        </div>
+                <div class="form-group">
+                    <label for="pub-name">Pub Name *</label>
+                    <input type="text" id="pub-name" required placeholder="Enter pub name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="pub-address">Address *</label>
+                    <div class="address-search-container">
+                        <input type="text" id="pub-address" required placeholder="Start typing an address...">
+                        <div class="address-results" id="address-results"></div>
                     </div>
                 </div>
-
-                <hr style="margin: 20px 0;">
-
-                <!-- New Beer Section -->
-                <form id="submit-price-form">
-                    <h3>Add New Beer</h3>
+                
+                <div class="form-row">
                     <div class="form-group">
-                        <label class="form-group__label" for="price-category">Beer Category *</label>
-                        <select id="price-category" class="form-group__select" required>
-                            <option value="">-- Select Category --</option>
+                        <label for="pub-lat">Latitude</label>
+                        <input type="text" id="pub-lat" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="pub-lon">Longitude</label>
+                        <input type="text" id="pub-lon" readonly>
+                    </div>
+                </div>
+                
+                <h3>Add Initial Beer</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="beer-category">Beer Category *</label>
+                        <select id="beer-category" required>
                             <option value="house">House/Cheapest</option>
                             <option value="local">Victorian/Australian Beers</option>
                             <option value="guinness">Guinness</option>
@@ -895,94 +808,217 @@
                             <option value="international">Internationals</option>
                         </select>
                     </div>
-                    
+                    <div class="form-group">
+                        <label for="beer-size">Size *</label>
+                        <select id="beer-size" required>
+                            <option value="pint">Pint (568ml)</option>
+                            <option value="schooner">Schooner (425ml)</option>
+                            <option value="pot">Pot (285ml)</option>
+                            <option value="bottle">Bottle</option>
+                            <option value="can">Can</option>
+                            <option value="jug">Jug</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="beer-price">Price (AUD) *</label>
+                    <input type="number" id="beer-price" min="0" step="0.01" required placeholder="0.00">
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="is-happy-hour"> This is a Happy Hour price!
+                    </label>
+                </div>
+
+                <div id="happy-hour-details" style="display: none;">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-group__label" for="price-size">Size *</label>
-                            <select id="price-size" class="form-group__select" required>
-                                <option value="pint">Pint</option>
-                                <option value="schooner">Schooner</option>
-                                <option value="pot">Pot</option>
-                                <option value="bottle">Bottle</option>
-                                <option value="can">Can</option>
-                                <option value="jug">Jug</option>
-                            </select>
+                            <label for="happy-hour-start">Start Time</label>
+                            <input type="time" id="happy-hour-start">
                         </div>
                         <div class="form-group">
-                            <label class="form-group__label" for="price-amount">Price (AUD) *</label>
-                            <input type="number" id="price-amount" class="form-group__input" min="0" step="0.01" required placeholder="0.00">
+                            <label for="happy-hour-end">End Time</label>
+                            <input type="time" id="happy-hour-end">
                         </div>
                     </div>
-
-                    <div class="form-group__checkbox">
-                        <input type="checkbox" id="new-is-happy-hour">
-                        <label for="new-is-happy-hour">This is a Happy Hour price!</label>
+                    <div class="form-group">
+                        <label for="happy-hour-days">Days</label>
+                        <select id="happy-hour-days" multiple>
+                            <option value="monday">Monday</option>
+                            <option value="tuesday">Tuesday</option>
+                            <option value="wednesday">Wednesday</option>
+                            <option value="thursday">Thursday</option>
+                            <option value="friday">Friday</option>
+                            <option value="saturday">Saturday</option>
+                            <option value="sunday">Sunday</option>
+                        </select>
                     </div>
-
-                    <div id="new-happy-hour-details" class="happy-hour-details">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-group__label" for="new-happy-hour-start">Start Time</label>
-                                <input type="time" id="new-happy-hour-start" class="form-group__input">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-group__label" for="new-happy-hour-end">End Time</label>
-                                <input type="time" id="new-happy-hour-end" class="form-group__input">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-group__label" for="new-happy-hour-days">Days</label>
-                            <select id="new-happy-hour-days" class="form-group__select" multiple>
-                                <option value="monday">Monday</option>
-                                <option value="tuesday">Tuesday</option>
-                                <option value="wednesday">Wednesday</option>
-                                <option value="thursday">Thursday</option>
-                                <option value="friday">Friday</option>
-                                <option value="saturday">Saturday</option>
-                                <option value="sunday">Sunday</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
+                </div>
             </div>
-            <div class="modal__footer">
-                <button class="btn btn--cancel" id="cancel-submit-price">Cancel</button>
-                <button class="btn btn--submit" id="submit-price">Submit Price</button>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="cancel-add-pub">Cancel</button>
+                <button class="modal-btn btn-submit" id="submit-pub-btn">Add Pub</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit New Price Modal -->
+    <div class="modal" id="submit-price-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Submit New Price</h2>
+                <button class="close-btn" id="close-submit-price">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="existing-beers-list"></div>
+                <hr>
+                <h3>Add New Beer</h3>
+                <div class="form-group">
+                    <label for="new-beer-category">Beer Category</label>
+                    <select id="new-beer-category">
+                        <option value="house">House/Cheapest</option>
+                        <option value="local">Victorian/Australian Beers</option>
+                        <option value="guinness">Guinness</option>
+                        <option value="pale-ale">Pale Ales</option>
+                        <option value="ipa">IPAs</option>
+                        <option value="lager">Lagers</option>
+                        <option value="dark">Stouts & Porters</option>
+                        <option value="specialty">Wheat/Sour/Cider</option>
+                        <option value="international">Internationals</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new-beer-size">Size</label>
+                        <select id="new-beer-size">
+                            <option value="pint">Pint</option>
+                            <option value="schooner">Schooner</option>
+                            <option value="pot">Pot</option>
+                            <option value="bottle">Bottle</option>
+                            <option value="can">Can</option>
+                            <option value="jug">Jug</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-beer-price">Price (AUD)</label>
+                        <input type="number" id="new-beer-price" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="new-is-happy-hour"> This is a Happy Hour price!
+                    </label>
+                </div>
+
+                <div id="new-happy-hour-details" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="new-happy-hour-start">Start Time</label>
+                            <input type="time" id="new-happy-hour-start">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-happy-hour-end">End Time</label>
+                            <input type="time" id="new-happy-hour-end">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-happy-hour-days">Days</label>
+                        <select id="new-happy-hour-days" multiple>
+                            <option value="monday">Monday</option>
+                            <option value="tuesday">Tuesday</option>
+                            <option value="wednesday">Wednesday</option>
+                            <option value="thursday">Thursday</option>
+                            <option value="friday">Friday</option>
+                            <option value="saturday">Saturday</option>
+                            <option value="sunday">Sunday</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" id="cancel-submit-price">Cancel</button>
+                <button class="modal-btn btn-submit" id="submit-price-btn">Submit Price</button>
             </div>
         </div>
     </div>
     
     <!-- Footer -->
-    <footer class="footer">
-        <p>BeerSpy Enhanced v0.1.1 &copy; 2025</p>
+    <footer>
+        <p>BeerSpy alpha v0.1.0 &copy; 2025</p>
     </footer>
 
-    <script>
-        // ========== CONFIGURATION ==========
+    <script type="module">
+        // =====================================
+        // CONSTANTS & CONFIGURATION
+        // =====================================
         const CONFIG = {
             SUPABASE_URL: "https://bvuuhxlsilmroyidaovp.supabase.co",
             SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc",
-            MELBOURNE_COORDS: [-37.8136, 144.9631],
-            DEFAULT_ZOOM: 13,
-            SEARCH_DEBOUNCE: 300,
+            DEFAULT_LOCATION: { lat: -37.8136, lon: 144.9631 },
+            SEARCH_DELAY: 300,
+            GEOCODING_DELAY: 100,
             TEST_MODE: false
         };
 
         const BEER_CATEGORIES = {
             'house': 'House/Cheapest',
             'local': 'Victorian/Australian Beers',
-            'guinness': 'Guinness',
             'pale-ale': 'Pale Ales',
             'ipa': 'IPAs',
             'lager': 'Lagers',
             'dark': 'Stouts & Porters',
+            'guinness': 'Guinness',
             'specialty': 'Wheat/Sour/Cider',
             'international': 'Internationals'
         };
 
-        // ========== UTILITY FUNCTIONS ==========
-        class Utils {
-            static debounce(func, wait) {
+        // =====================================
+        // GLOBAL STATE
+        // =====================================
+        class AppState {
+            constructor() {
+                this.map = null;
+                this.sbClient = null;
+                this.userLocation = null;
+                this.pubs = [];
+                this.markers = [];
+                this.currentSize = "pint";
+                this.currentPubForPriceUpdate = null;
+                this.searchTimeout = null;
+            }
+
+            init() {
+                this.sbClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+                console.log("BeerSpy app initialized");
+            }
+        }
+
+        const appState = new AppState();
+
+        // =====================================
+        // UTILITY FUNCTIONS
+        // =====================================
+        const Utils = {
+            showError(message, elementId = 'error-message') {
+                const errorElement = document.getElementById(elementId);
+                if (errorElement) {
+                    errorElement.textContent = message;
+                    errorElement.style.display = 'block';
+                }
+                console.error(message);
+            },
+
+            hideError(elementId = 'error-message') {
+                const errorElement = document.getElementById(elementId);
+                if (errorElement) {
+                    errorElement.style.display = 'none';
+                    errorElement.textContent = '';
+                }
+            },
+
+            debounce(func, wait) {
                 let timeout;
                 return function executedFunction(...args) {
                     const later = () => {
@@ -992,31 +1028,15 @@
                     clearTimeout(timeout);
                     timeout = setTimeout(later, wait);
                 };
-            }
+            },
 
-            static showError(elementId, message) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.textContent = message;
-                    element.classList.add('error--show');
-                }
-            }
-
-            static hideError(elementId) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.classList.remove('error--show');
-                }
-            }
-
-            static formatPrice(price) {
+            formatPrice(price) {
                 return `$${parseFloat(price).toFixed(2)}`;
-            }
+            },
 
-            static formatDate(dateString) {
-                if (!dateString) return 'Unknown';
+            formatDate(dateString) {
+                if (!dateString) return new Date().toLocaleString();
                 
-                // Ensure the timestamp is treated as UTC by appending 'Z' if not present
                 let timestamp = dateString;
                 if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
                     timestamp += 'Z';
@@ -1031,53 +1051,27 @@
                     hour: '2-digit', 
                     minute: '2-digit'
                 });
-            }
-            static getAgeClass(dateString) {
-                if (!dateString) return 'old';
-                const now = new Date();
-                const date = new Date(dateString);
-                const ageInDays = (now - date) / (1000 * 60 * 60 * 24);
-                
-                if (ageInDays <= 7) return 'recent';
-                if (ageInDays <= 30) return 'average';
-                return 'old';
-            }
+            },
 
-            static checkIfCurrentlyHappyHour(beer) {
-                if (!beer.is_happy_hour || !beer.happy_hour_start || !beer.happy_hour_end || !beer.happy_hour_days) {
-                    return false;
+            getDaysDifference(dateString) {
+                if (!dateString) return 0;
+                
+                let timestamp = dateString;
+                if (!timestamp.endsWith('Z') && !timestamp.includes('+')) {
+                    timestamp += 'Z';
                 }
                 
                 const now = new Date();
-                const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-                const currentTime = now.getHours() * 60 + now.getMinutes();
-                
-                // Check if today is a happy hour day - handle both array and string formats
-                const happyHourDays = Array.isArray(beer.happy_hour_days) ? beer.happy_hour_days : [beer.happy_hour_days];
-                if (!happyHourDays.includes(currentDay)) {
-                    return false;
-                }
-                
-                // Parse happy hour times
-                const [startHour, startMin] = beer.happy_hour_start.split(':').map(Number);
-                const [endHour, endMin] = beer.happy_hour_end.split(':').map(Number);
-                const startTime = startHour * 60 + startMin;
-                const endTime = endHour * 60 + endMin;
-                
-                // Check if current time is within happy hour
-                if (startTime <= endTime) {
-                    return currentTime >= startTime && currentTime <= endTime;
-                } else {
-                    // Happy hour crosses midnight
-                    return currentTime >= startTime || currentTime <= endTime;
-                }
+                const date = new Date(timestamp);
+                return (now - date) / (1000 * 60 * 60 * 24);
             }
-         
-        }
+        };
 
-        // ========== LOCATION SERVICE ==========
-        class LocationService {
-            static async getUserLocation() {
+        // =====================================
+        // LOCATION SERVICES
+        // =====================================
+        const LocationService = {
+            async getUserLocation() {
                 // Try GPS first
                 if (navigator.geolocation) {
                     try {
@@ -1098,7 +1092,7 @@
                     }
                 }
 
-                // Fallback to IP location
+                // Fallback to IP-based location
                 try {
                     const response = await fetch('https://ipapi.co/json/');
                     const data = await response.json();
@@ -1107,7 +1101,7 @@
                         const lat = parseFloat(data.latitude);
                         const lon = parseFloat(data.longitude);
                         
-                        // Check if in Victoria bounds
+                        // Check if user is in Victoria area
                         if (lat >= -39.2 && lat <= -34.0 && lon >= 140.9 && lon <= 150.0) {
                             return {
                                 lat: lat,
@@ -1116,6 +1110,8 @@
                                 city: data.city,
                                 region: data.region
                             };
+                        } else {
+                            throw new Error(`Location outside Victoria: ${data.city}, ${data.region}`);
                         }
                     }
                 } catch (ipError) {
@@ -1123,144 +1119,308 @@
                 }
 
                 throw new Error("No location services available");
-            }
+            },
 
-            static async geocodeAddress(address) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-                    address + ", Melbourne, Australia"
-                )}&limit=5&addressdetails=1`;
+            async geocodeAddress(address) {
+                await new Promise(resolve => setTimeout(resolve, CONFIG.GEOCODING_DELAY));
+                
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
 
                 try {
                     const response = await fetch(url);
                     const data = await response.json();
-                    return data || [];
+
+                    if (data && data.length > 0) {
+                        const result = data[0];
+                        const lat = parseFloat(result.lat);
+                        const lon = parseFloat(result.lon);
+
+                        if (!isNaN(lat) && !isNaN(lon)) {
+                            return { lat, lon, result };
+                        }
+                    }
+                    return null;
                 } catch (error) {
                     console.error("Geocoding error:", error);
-                    return [];
+                    return null;
                 }
             }
-        }
+        };
 
-        // ========== DATABASE SERVICE ==========
-        class DatabaseService {
-            constructor() {
-                if (!CONFIG.TEST_MODE) {
-                    this.client = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        // =====================================
+        // MAP MANAGEMENT
+        // =====================================
+        const MapManager = {
+            async initialize() {
+                let mapCenter = CONFIG.DEFAULT_LOCATION;
+                let zoom = 13;
+
+                try {
+                    const location = await LocationService.getUserLocation();
+                    if (location) {
+                        appState.userLocation = location;
+                        mapCenter = { lat: location.lat, lon: location.lon };
+                        zoom = 14;
+                        console.log("Using user location:", location);
+                    }
+                } catch (error) {
+                    console.log("Using default Melbourne location:", error.message);
+                }
+
+                appState.map = L.map("map").setView([mapCenter.lat, mapCenter.lon], zoom);
+
+                L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    attribution: "&copy; OpenStreetMap contributors",
+                }).addTo(appState.map);
+
+                // Add user location marker if GPS was used
+                if (appState.userLocation && appState.userLocation.source === 'gps') {
+                    L.marker([appState.userLocation.lat, appState.userLocation.lon], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: '<div class="user-location-icon">📍</div>',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        })
+                    }).addTo(appState.map).bindPopup("Your location");
+                }
+
+                this.setupMapEvents();
+            },
+
+            setupMapEvents() {
+                appState.map.on('click', (e) => {
+                    if (!e.originalEvent.target.closest('.leaflet-marker-icon')) {
+                        appState.map.closePopup();
+                    }
+                });
+
+                appState.map.on("popupopen", (e) => {
+                    setTimeout(() => {
+                        const popupContainer = e.popup.getElement();
+                        if (!popupContainer) return;
+                        
+                        const contentNode = popupContainer.querySelector(".leaflet-popup-content");
+                        if (!contentNode) return;
+                        
+                        const submitBtn = contentNode.querySelector(".add-beer-btn");
+                        if (submitBtn) {
+                            submitBtn.onclick = () => {
+                                const popupLatLng = e.popup.getLatLng();
+                                const pub = appState.pubs.find(p => 
+                                    Math.abs(p.lat - popupLatLng.lat) < 0.0001 && 
+                                    Math.abs(p.lon - popupLatLng.lng) < 0.0001
+                                );
+                                if (pub) {
+                                    appState.currentPubForPriceUpdate = pub;
+                                    ModalManager.openSubmitPriceModal(pub);
+                                }
+                            };
+                        }
+                    }, 100);
+                });
+            },
+
+            createCustomIcon(price, ageClass, isCurrentlyHappyHour = false) {
+                const happyHourClass = isCurrentlyHappyHour ? ' happy-hour' : '';
+                
+                return L.divIcon({
+                    className: "custom-marker",
+                    html: `<div class="price-bubble ${ageClass}${happyHourClass}">${Utils.formatPrice(price)}</div>`,
+                    iconSize: [60, 30],
+                    iconAnchor: [30, 30],
+                });
+            },
+
+            renderMarkers() {
+                // Clear existing markers
+                appState.markers.forEach((marker) => {
+                    if (appState.map.hasLayer(marker)) {
+                        appState.map.removeLayer(marker);
+                    }
+                });
+                appState.markers = [];
+
+                appState.pubs.forEach((pub) => {
+                    const beersForSize = pub.beers.filter((beer) => beer.size === appState.currentSize);
+                    if (beersForSize.length === 0) return;
+
+                    // Get the most recent price for each unique beer name
+                    const beerMap = new Map();
+                    beersForSize.forEach(beer => {
+                        const existingBeer = beerMap.get(beer.name);
+                        const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
+                        
+                        if (!existingBeer || beerTime > existingBeer.time) {
+                            beerMap.set(beer.name, { beer, time: beerTime });
+                        }
+                    });
+
+                    const mostRecentPrices = Array.from(beerMap.values()).map(item => item.beer.price);
+                    const minRecentPrice = Math.min(...mostRecentPrices);
+                    const cheapestBeer = Array.from(beerMap.values()).find(item => item.beer.price === minRecentPrice);
+                    
+                    // Determine age class
+                    const ageInDays = Utils.getDaysDifference(cheapestBeer.beer.last_updated);
+                    let ageClass = ageInDays <= 7 ? 'recent' : ageInDays <= 30 ? 'average' : 'old';
+                    
+                    const isCurrentlyHappyHour = this.checkIfCurrentlyHappyHour(cheapestBeer.beer);
+
+                    const marker = L.marker([pub.lat, pub.lon], {
+                        icon: this.createCustomIcon(minRecentPrice, ageClass, isCurrentlyHappyHour),
+                    }).addTo(appState.map);
+
+                    marker.pubData = pub;
+                    marker.on("click", this.onMarkerClick);
+                    appState.markers.push(marker);
+                });
+
+                Statistics.update();
+            },
+
+            onMarkerClick(e) {
+                const pub = e.target.pubData;
+                const beersForSize = pub.beers.filter((beer) => beer.size === appState.currentSize);
+
+                appState.map.closePopup();
+
+                setTimeout(() => {
+                    const popup = L.popup()
+                        .setLatLng([pub.lat, pub.lon])
+                        .setContent(MapManager.createPopupContent(pub, beersForSize))
+                        .openOn(appState.map);
+                }, 50);
+            },
+
+            createPopupContent(pub, beers) {
+                let content = `
+                    <div class="pub-popup">
+                        <h3>${pub.name}</h3>
+                        <div class="address">${pub.address}</div>
+                        <table class="beer-table">
+                            <tr>
+                                <th>Category</th>
+                                <th>Size</th>
+                                <th>Price</th>
+                            </tr>
+                `;
+
+                const beerMap = new Map();
+                beers.forEach(beer => {
+                    const key = `${beer.name}_${beer.size}`;
+                    const existingBeer = beerMap.get(key);
+                    const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
+                    
+                    if (!existingBeer || beerTime > existingBeer.time) {
+                        beerMap.set(key, { beer, time: beerTime });
+                    }
+                });
+
+                const uniqueBeers = Array.from(beerMap.values())
+                    .map(i => i.beer)
+                    .sort((a, b) => a.price - b.price);
+
+                uniqueBeers.forEach((beer) => {
+                    const isHappyHour = beer.is_happy_hour;
+                    const priceClass = isHappyHour ? ' happy-hour' : '';
+                    const happyHourText = isHappyHour ? ' (Happy Hour)' : '';
+                    
+                    content += `
+                        <tr>
+                            <td>${BEER_CATEGORIES[beer.name] || beer.name}${happyHourText}</td>
+                            <td>${beer.size}</td>
+                            <td class="beer-price${priceClass}">${Utils.formatPrice(beer.price)}</td>
+                        </tr>
+                    `;
+                });
+
+                const mostRecentUpdate = beers.reduce((latest, beer) => {
+                    if (!beer.last_updated) return latest;
+                    const beerDate = new Date(beer.last_updated + (beer.last_updated.endsWith('Z') ? '' : 'Z'));
+                    return !latest || beerDate > latest ? beerDate : latest;
+                }, null);
+
+                const lastUpdatedDate = Utils.formatDate(mostRecentUpdate?.toISOString());
+
+                content += `
+                        </table>
+                        <div class="last-updated">Updated: ${lastUpdatedDate}</div>
+                        <div class="popup-actions">
+                            <button class="add-beer-btn">Submit New Price</button>
+                        </div>
+                    </div>
+                `;
+                return content;
+            },
+
+            checkIfCurrentlyHappyHour(beer) {
+                if (!beer.is_happy_hour || !beer.happy_hour_start || !beer.happy_hour_end || !beer.happy_hour_days) {
+                    return false;
+                }
+                
+                const now = new Date();
+                const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();      
+                const currentTime = now.getHours() * 60 + now.getMinutes();
+                
+                const dayNames = {
+                    'sunday': 'sunday', 'monday': 'monday', 'tuesday': 'tuesday', 
+                    'wednesday': 'wednesday', 'thursday': 'thursday', 'friday': 'friday', 'saturday': 'saturday'
+                };
+                
+                if (!beer.happy_hour_days.includes(currentDay)) {
+                    return false;
+                }
+                
+                const [startHour, startMin] = beer.happy_hour_start.split(':').map(Number);
+                const [endHour, endMin] = beer.happy_hour_end.split(':').map(Number);
+                const startTime = startHour * 60 + startMin;
+                const endTime = endHour * 60 + endMin;
+                
+                if (startTime <= endTime) {
+                    return currentTime >= startTime && currentTime <= endTime;
+                } else {
+                    return currentTime >= startTime || currentTime <= endTime;
                 }
             }
+        };
 
+        // =====================================
+        // DATA MANAGEMENT
+        // =====================================
+        const DataManager = {
             async fetchBeerPrices() {
-                if (CONFIG.TEST_MODE) {
-                    return this.getTestData();
-                }
-
                 try {
-                    const { data, error } = await this.client.from("beer_prices").select("*");
-                    
+                    if (CONFIG.TEST_MODE) {
+                        appState.pubs = this.getTestData();
+                        MapManager.renderMarkers();
+                        console.log("Using local test data");
+                        return;
+                    }
+
+                    const { data, error } = await appState.sbClient.from("beer_prices").select("*");
+
                     if (error) {
-                        console.error("Supabase error:", error.message);
-                        return [];
+                        console.error("Error fetching beer prices from Supabase:", error.message);
+                        MapManager.renderMarkers();
+                        return;
                     }
-                    
-                    return data || [];
-                } catch (err) {
-                    console.error("Database fetch error:", err);
-                    return [];
-                }
-            }
 
-            async savePub(pub) {
-                if (CONFIG.TEST_MODE) {
-                    console.log("Test mode: would save pub", pub);
-                    return;
-                }
-
-                try {
-                    // Delete existing records
-                    const { error: deleteError } = await this.client
-                        .from("beer_prices")
-                        .delete()
-                        .eq("pub_name", pub.name)
-                        .eq("lat", pub.lat)
-                        .eq("lon", pub.lon);
-
-                    if (deleteError) throw deleteError;
-
-                    // Insert new records
-                    const newRecords = pub.beers.map((beer) => ({
-                        pub_name: pub.name,
-                        beer_name: beer.name,
-                        size: beer.size,
-                        price: beer.price,
-                        lat: pub.lat,
-                        lon: pub.lon,
-                        location: pub.address,
-                        last_updated: new Date().toISOString(),
-                        is_happy_hour: beer.is_happy_hour || false,
-                        happy_hour_start: beer.happy_hour_start || null,
-                        happy_hour_end: beer.happy_hour_end || null,
-                        happy_hour_days: beer.happy_hour_days || null
-                    }));
-
-                    const { error: insertError } = await this.client
-                        .from("beer_prices")
-                        .insert(newRecords);
-
-                    if (insertError) throw insertError;
-
-                } catch (err) {
-                    console.error("Database save error:", err);
-                    throw err;
-                }
-            }
-
-            getTestData() {
-                return [
-                    {
-                        pub_name: "The Lagerhaus",
-                        beer_name: "house",
-                        size: "pint",
-                        price: 7.5,
-                        lat: -37.8140,
-                        lon: 144.9643,
-                        location: "250 Collins St, Melbourne VIC 3000",
-                        last_updated: new Date().toISOString(),
-                        is_happy_hour: true,
-                        happy_hour_start: "17:00",
-                        happy_hour_end: "19:00",
-                        happy_hour_days: ["monday", "tuesday", "wednesday", "thursday", "friday"]
-                    },
-                    {
-                        pub_name: "Hoppy Hop",
-                        beer_name: "ipa",
-                        size: "schooner",
-                        price: 8.5,
-                        lat: -37.8240,
-                        lon: 144.9843,
-                        location: "45 Bourke St, Melbourne VIC 3000",
-                        last_updated: new Date().toISOString(),
-                        is_happy_hour: false
+                    if (!data || data.length === 0) {
+                        console.warn("No data fetched from Supabase");
+                        MapManager.renderMarkers();
+                        return;
                     }
-                ];
-            }
-        }
 
-        // ========== DATA MANAGER ==========
-        class DataManager {
-            constructor() {
-                this.pubs = [];
-                this.currentSize = 'pint';
-                this.dbService = new DatabaseService();
-            }
+                    console.log("Fetched beer prices:", data);
+                    this.processSupabaseData(data);
+                    MapManager.renderMarkers();
+                } catch (err) {
+                    console.error("Fetch from Supabase error:", err);
+                    MapManager.renderMarkers();
+                }
+            },
 
-            async loadData() {
-                const rawData = await this.dbService.fetchBeerPrices();
-                this.pubs = this.processRawData(rawData);
-                return this.pubs;
-            }
-
-            processRawData(beerPrices) {
+            processSupabaseData(beerPrices) {
                 const pubsMap = new Map();
 
                 beerPrices.forEach((item) => {
@@ -1290,326 +1450,185 @@
                     });
                 });
 
-                return Array.from(pubsMap.values());
-            }
+                appState.pubs = Array.from(pubsMap.values());
+                console.log("Processed pubs:", appState.pubs);
+            },
 
-            async savePub(pubData) {
-                await this.dbService.savePub(pubData);
-                await this.loadData(); // Reload data
-            }
+            async updatePubInDatabase(pub) {
+                console.log("Updating pub in database:", pub);
 
-            getPubsForSize(size = this.currentSize) {
-                return this.pubs.map(pub => ({
-                    ...pub,
-                    beers: pub.beers.filter(beer => beer.size === size)
-                })).filter(pub => pub.beers.length > 0);
-            }
-
-            getStatistics() {
-                const totalPubs = this.pubs.length;
-                
-                const uniqueBeerNames = new Set();
-                this.pubs.forEach(pub => {
-                    pub.beers.forEach(beer => {
-                        uniqueBeerNames.add(beer.name);
-                    });
-                });
-                
-                const prices = [];
-                this.pubs.forEach(pub => {
-                    const beersForSize = pub.beers.filter(beer => beer.size === this.currentSize);
-                    beersForSize.forEach(beer => prices.push(beer.price));
-                });
-
-                const avgPrice = prices.length > 0 
-                    ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
-                    : "N/A";
-
-                return {
-                    totalPubs,
-                    totalBeers: uniqueBeerNames.size,
-                    avgPrice: avgPrice === "N/A" ? avgPrice : `$${avgPrice}`
-                };
-            }
-
-            setCurrentSize(size) {
-                this.currentSize = size;
-            }
-        }
-
-        // ========== MAP MANAGER ==========
-        class MapManager {
-            constructor(dataManager) {
-                this.dataManager = dataManager;
-                this.map = null;
-                this.markers = [];
-                this.userLocation = null;
-            }
-
-            async initialize() {
-                // Try to get user location
                 try {
-                    this.userLocation = await LocationService.getUserLocation();
-                    console.log("Using user location:", this.userLocation);
-                } catch (error) {
-                    console.log("Using default Melbourne location:", error.message);
-                }
-
-                // Create map
-                const coords = this.userLocation 
-                    ? [this.userLocation.lat, this.userLocation.lon]
-                    : CONFIG.MELBOURNE_COORDS;
-                
-                const zoom = this.userLocation && this.userLocation.source === 'gps' ? 14 : CONFIG.DEFAULT_ZOOM;
-
-                this.map = L.map("map").setView(coords, zoom);
-
-                // Add tile layer
-                L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                    attribution: "&copy; OpenStreetMap contributors",
-                }).addTo(this.map);
-
-                // Add user location marker if GPS
-                if (this.userLocation && this.userLocation.source === 'gps') {
-                    L.marker([this.userLocation.lat, this.userLocation.lon], {
-                        icon: L.divIcon({
-                            className: 'user-location-marker',
-                            html: '<div class="user-location-icon">📍</div>',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
-                        })
-                    }).addTo(this.map).bindPopup("Your location");
-                }
-
-                return this.map;
-            }
-
-            renderPubs() {
-            // Clear existing markers
-            this.markers.forEach(marker => {
-                if (this.map.hasLayer(marker)) {
-                    this.map.removeLayer(marker);
-                }
-            });
-            this.markers = [];
-
-            const pubsForSize = this.dataManager.getPubsForSize();
-
-            pubsForSize.forEach(pub => {
-                if (pub.beers.length === 0) return;
-
-                // Get the most recent price for each unique beer name
-                const beerMap = new Map();
-                pub.beers.forEach(beer => {
-                    const existingBeer = beerMap.get(beer.name);
-                    const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
-                    
-                    if (!existingBeer || beerTime > existingBeer.time) {
-                        beerMap.set(beer.name, {
-                            beer: beer,
-                            time: beerTime
-                        });
-                    }
-                });
-
-                // Get the most recent prices and find the minimum among those
-                const mostRecentPrices = Array.from(beerMap.values()).map(item => item.beer.price);
-                const minRecentPrice = Math.min(...mostRecentPrices);
-                const cheapestBeer = Array.from(beerMap.values()).find(item => item.beer.price === minRecentPrice).beer;
-                
-                const ageClass = Utils.getAgeClass(cheapestBeer.last_updated);
-                const isCurrentlyHappyHour = Utils.checkIfCurrentlyHappyHour(cheapestBeer);
-
-                const marker = L.marker([pub.lat, pub.lon], {
-                    icon: this.createPriceIcon(minRecentPrice, ageClass, isCurrentlyHappyHour),
-                }).addTo(this.map);
-
-                marker.pubData = pub;
-                marker.on("click", () => this.onMarkerClick(pub));
-                this.markers.push(marker);
-            });
-        }
-
-            createPriceIcon(price, ageClass, isCurrentlyHappyHour = false) {
-                const happyHourClass = isCurrentlyHappyHour ? ' price-bubble--happy-hour' : '';
-                
-                return L.divIcon({
-                    className: "custom-marker",
-                    html: `<div class="price-bubble price-bubble--${ageClass}${happyHourClass}">${Utils.formatPrice(price)}</div>`,
-                    iconSize: [60, 40],
-                    iconAnchor: [30, 40],
-                });
-            }
-
-            onMarkerClick(pub) {
-                this.map.closePopup();
-
-                setTimeout(() => {
-                    const popup = L.popup()
-                        .setLatLng([pub.lat, pub.lon])
-                        .setContent(this.createPopupContent(pub))
-                        .openOn(this.map);
-
-                    // Add click handler for submit price button
-                    setTimeout(() => {
-                        const submitBtn = popup.getElement().querySelector('.popup-btn');
-                        if (submitBtn) {
-                            submitBtn.onclick = () => {
-                                app.modalManager.openSubmitPriceModal(pub);
-                            };
-                        }
-                    }, 100);
-                }, 50);
-            }
-            createPopupContent(pub) {
-                const beersForCurrentSize = pub.beers.filter(beer => beer.size === this.dataManager.currentSize);
-                
-                let content = `
-                    <div class="pub-popup">
-                        <h3 class="pub-popup__title">${pub.name}</h3>
-                        <div class="pub-popup__address">${pub.address}</div>
-                        <table class="beer-table">
-                            <tr>
-                                <th>Category</th>
-                                <th>Size</th>
-                                <th>Price</th>
-                            </tr>
-                `;
-
-                // Deduplicate beers - show only the most recent entry for each beer name/size combo
-                const beerMap = new Map();
-                beersForCurrentSize.forEach(beer => {
-                    const key = `${beer.name}_${beer.size}`;
-                    const existingBeer = beerMap.get(key);
-                    const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
-                    
-                    if (!existingBeer || beerTime > existingBeer.time) {
-                        beerMap.set(key, {
-                            beer: beer,
-                            time: beerTime
-                        });
-                    }
-                });
-
-                // Convert Map values to array and sort by price
-                const uniqueBeers = Array.from(beerMap.values())
-                    .map(item => item.beer)
-                    .sort((a, b) => a.price - b.price);
-
-                uniqueBeers.forEach(beer => {
-                    const isCurrentlyHappyHour = Utils.checkIfCurrentlyHappyHour(beer);
-                    const priceClass = isCurrentlyHappyHour ? ' beer-price--happy-hour' : '';
-                    const happyHourText = isCurrentlyHappyHour ? ' (Happy Hour)' : '';
-
-                    content += `
-                        <tr>
-                            <td>${BEER_CATEGORIES[beer.name] || beer.name}${happyHourText}</td>
-                            <td>${beer.size}</td>
-                            <td class="beer-price${priceClass}">${Utils.formatPrice(beer.price)}</td>
-                        </tr>
-                    `;
-                });
-
-                const mostRecentUpdate = uniqueBeers.reduce((latest, beer) => {
-                    const beerDate = new Date(beer.last_updated + 'Z');
-                    return !latest || beerDate > latest ? beerDate : latest;
-                }, null);
-
-                content += `
-                        </table>
-                        <div class="last-updated">Updated: ${Utils.formatDate(mostRecentUpdate)}</div>
-                        <div class="popup-actions">
-                            <button class="popup-btn">Submit New Price</button>
-                        </div>
-                    </div>
-                `;
-
-                return content;
-            }
-            
-        }
-
-        // ========== SEARCH MANAGER ==========
-        class SearchManager {
-            constructor(dataManager, mapManager) {
-                this.dataManager = dataManager;
-                this.mapManager = mapManager;
-                this.searchInput = document.getElementById('search-input');
-                this.searchResults = document.getElementById('search-results');
-                this.setupEventListeners();
-            }
-
-            setupEventListeners() {
-                const debouncedSearch = Utils.debounce((query) => this.performSearch(query), CONFIG.SEARCH_DEBOUNCE);
-                
-                this.searchInput.addEventListener('input', (e) => {
-                    const query = e.target.value.trim();
-                    if (query.length < 2) {
-                        this.hideResults();
+                    if (CONFIG.TEST_MODE) {
+                        console.log("Not updating Supabase - test mode enabled");
+                        appState.pubs = appState.pubs.map((p) => (p.id === pub.id ? pub : p));
+                        MapManager.renderMarkers();
+                        Utils.hideError();
                         return;
                     }
-                    debouncedSearch(query);
-                });
+
+                    // Delete existing records for this pub
+                    const { error: deleteError } = await appState.sbClient
+                        .from("beer_prices")
+                        .delete()
+                        .eq("pub_name", pub.name)
+                        .eq("lat", pub.lat)
+                        .eq("lon", pub.lon);
+
+                    if (deleteError) {
+                        throw new Error(`Error deleting old records: ${deleteError.message}`);
+                    }
+
+                    // Insert new records
+                    const newRecords = pub.beers.map((beer) => ({
+                        pub_name: pub.name,
+                        beer_name: beer.name,
+                        size: beer.size,
+                        price: beer.price,
+                        lat: pub.lat,
+                        lon: pub.lon,
+                        location: pub.address,
+                        last_updated: new Date().toISOString(),
+                        is_happy_hour: beer.is_happy_hour || false,
+                        happy_hour_start: beer.happy_hour_start || null,
+                        happy_hour_end: beer.happy_hour_end || null,
+                        happy_hour_days: beer.happy_hour_days || null
+                    }));
+
+                    const { error: insertError } = await appState.sbClient
+                        .from("beer_prices")
+                        .insert(newRecords);
+
+                    if (insertError) {
+                        throw new Error(`Error saving pub: ${insertError.message}`);
+                    }
+
+                    await this.fetchBeerPrices();
+                    Utils.hideError();
+                } catch (err) {
+                    console.error("Database update error:", err);
+                    Utils.showError(`Database error: ${err.message}`);
+                }
+            },
+
+            getTestData() {
+                return [
+                    {
+                        id: 1,
+                        name: "The Lagerhaus",
+                        address: "250 Collins St, Melbourne VIC 3000",
+                        lat: -37.8140,
+                        lon: 144.9643,
+                        beers: [
+                            { name: "house", size: "pint", price: 7.5 },
+                            { name: "ipa", size: "pint", price: 9.0 },
+                            { name: "local", size: "pint", price: 7.0 },
+                        ],
+                    },
+                    {
+                        id: 2,
+                        name: "Hoppy Hop",
+                        address: "45 Bourke St, Melbourne VIC 3000",
+                        lat: -37.8240,
+                        lon: 144.9843,
+                        beers: [
+                            { name: "ipa", size: "schooner", price: 5.5 },
+                            { name: "dark", size: "pot", price: 6.5 },
+                        ],
+                    },
+                ];
+            }
+        };
+
+        // =====================================
+        // SEARCH FUNCTIONALITY
+        // =====================================
+        const SearchManager = {
+            init() {
+                const searchInput = document.getElementById("pub-search");
+                const resultsDiv = document.getElementById("search-results");
+
+                if (!searchInput || !resultsDiv) {
+                    console.error("Search elements not found");
+                    return;
+                }
+
+                searchInput.addEventListener("input", Utils.debounce((e) => {
+                    this.handleSearch(e.target.value.trim(), resultsDiv);
+                }, CONFIG.SEARCH_DELAY));
 
                 // Hide results when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!this.searchInput.contains(e.target) && !this.searchResults.contains(e.target)) {
-                        this.hideResults();
+                document.addEventListener("click", (e) => {
+                    if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                        resultsDiv.classList.remove('show');
                     }
                 });
-            }
+            },
 
-            async performSearch(query) {
+            async handleSearch(query, resultsDiv) {
+                if (query.length < 2) {
+                    resultsDiv.classList.remove('show');
+                    return;
+                }
+
                 try {
                     // Search existing pubs
-                    const existingResults = this.dataManager.pubs.filter(
+                    const existingResults = appState.pubs.filter(
                         (pub) =>
                             pub.name.toLowerCase().includes(query.toLowerCase()) ||
                             pub.address.toLowerCase().includes(query.toLowerCase())
                     );
 
-                    // Search for new places
+                    // Search for new places via geocoding
                     let geocodeResults = [];
                     if (query.length >= 3) {
-                        const places = await LocationService.geocodeAddress(query);
-                        geocodeResults = places.filter(place => {
-                            const lat = parseFloat(place.lat);
-                            const lon = parseFloat(place.lon);
-                            
-                            return !this.dataManager.pubs.some(pub => 
-                                Math.abs(pub.lat - lat) < 0.001 && 
-                                Math.abs(pub.lon - lon) < 0.001
-                            );
-                        });
+                        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Melbourne, Australia")}&limit=5&addressdetails=1&extratags=1`;
+                        
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        
+                        if (data && data.length > 0) {
+                            geocodeResults = data.filter(place => {
+                                const lat = parseFloat(place.lat);
+                                const lon = parseFloat(place.lon);
+                                
+                                return !appState.pubs.some(pub => 
+                                    Math.abs(pub.lat - lat) < 0.001 && 
+                                    Math.abs(pub.lon - lon) < 0.001
+                                );
+                            });
+                        }
                     }
 
-                    this.displayResults(existingResults, geocodeResults);
+                    this.displaySearchResults(existingResults, geocodeResults, resultsDiv);
                 } catch (error) {
                     console.error("Search error:", error);
-                    this.showErrorResult();
+                    resultsDiv.innerHTML = '<div class="search-item">Search error - check console</div>';
+                    resultsDiv.classList.add('show');
                 }
-            }
+            },
 
-            displayResults(existingResults, geocodeResults) {
-                let html = '';
-
-                // Existing pubs
+            displaySearchResults(existingResults, geocodeResults, resultsDiv) {
+                let resultsHTML = '';
+                
+                // Show existing pubs first
                 if (existingResults.length > 0) {
-                    html += existingResults.slice(0, 3).map(pub => `
-                        <div class="search-item search-item--existing" data-type="existing" data-lat="${pub.lat}" data-lon="${pub.lon}">
+                    resultsHTML += existingResults.slice(0, 3).map(pub => `
+                        <div class="search-item existing-pub-indicator" data-type="existing" data-lat="${pub.lat}" data-lon="${pub.lon}">
                             <div class="place-name">${pub.name}</div>
                             <div class="place-address">${pub.address}</div>
                             <div class="place-type">Existing pub • ${pub.beers.length} beers listed</div>
                         </div>
                     `).join('');
                 }
-
-                // New locations
+                
+                // Show new locations
                 if (geocodeResults.length > 0) {
-                    html += geocodeResults.slice(0, 3).map(place => {
+                    resultsHTML += geocodeResults.slice(0, 3).map(place => {
                         const pubName = this.extractPubName(place);
+                        const placeType = this.getPlaceType(place);
+                        
                         return `
-                            <div class="search-item search-item--new" 
+                            <div class="search-item new-location-indicator" 
                                  data-type="new" 
                                  data-lat="${place.lat}" 
                                  data-lon="${place.lon}"
@@ -1617,36 +1636,37 @@
                                  data-address="${place.display_name}">
                                 <div class="place-name">${pubName}</div>
                                 <div class="place-address">${place.display_name}</div>
-                                <div class="place-type">New location • Click to add as pub</div>
+                                <div class="place-type">${placeType} • Click to add as new pub</div>
                             </div>
                         `;
                     }).join('');
                 }
-
-                if (html) {
-                    this.searchResults.innerHTML = html;
-                    this.showResults();
-                    this.attachResultClickHandlers();
+                
+                if (resultsHTML) {
+                    resultsDiv.innerHTML = resultsHTML;
+                    resultsDiv.classList.add('show');
+                    this.attachSearchResultHandlers(resultsDiv);
                 } else {
-                    this.searchResults.innerHTML = '<div class="search-item">No results found</div>';
-                    this.showResults();
+                    resultsDiv.innerHTML = '<div class="search-item">No results found</div>';
+                    resultsDiv.classList.add('show');
                 }
-            }
+            },
 
-            attachResultClickHandlers() {
-                this.searchResults.querySelectorAll('.search-item').forEach(item => {
+            attachSearchResultHandlers(resultsDiv) {
+                resultsDiv.querySelectorAll('.search-item').forEach(item => {
                     item.addEventListener('click', () => {
                         const lat = parseFloat(item.dataset.lat);
                         const lon = parseFloat(item.dataset.lon);
                         const type = item.dataset.type;
-
+                        
                         if (type === 'existing') {
-                            this.mapManager.focusOnLocation(lat, lon);
-                            this.hideResults();
-                            this.searchInput.value = '';
+                            // Navigate to existing pub
+                            appState.map.setView([lat, lon], 16);
+                            resultsDiv.classList.remove('show');
+                            document.getElementById("pub-search").value = "";
                             
-                            // Find and click the marker
-                            const marker = this.mapManager.markers.find(m => 
+                            // Open the popup for this pub
+                            const marker = appState.markers.find(m => 
                                 Math.abs(m.getLatLng().lat - lat) < 0.0001 && 
                                 Math.abs(m.getLatLng().lng - lon) < 0.0001
                             );
@@ -1654,196 +1674,268 @@
                                 setTimeout(() => marker.fire('click'), 200);
                             }
                         } else {
-                            // Open add pub modal with pre-filled data
-                            app.modalManager.openAddPubModal({
-                                name: item.dataset.name,
-                                address: item.dataset.address,
-                                lat: lat,
-                                lon: lon
-                            });
-                            this.hideResults();
-                            this.searchInput.value = '';
+                            // Open "Add Pub" modal with pre-filled data
+                            const pubName = item.dataset.name;
+                            const address = item.dataset.address;
+                            
+                            document.getElementById("pub-name").value = pubName;
+                            document.getElementById("pub-address").value = address;
+                            document.getElementById("pub-lat").value = lat;
+                            document.getElementById("pub-lon").value = lon;
+                            
+                            const modal = document.getElementById("add-pub-modal");
+                            if (modal) {
+                                modal.style.display = "flex";
+                                appState.map.setView([lat, lon], 16);
+                            }
+                            
+                            resultsDiv.classList.remove('show');
+                            document.getElementById("pub-search").value = "";
                         }
                     });
                 });
-            }
+            },
 
             extractPubName(placeData) {
                 if (placeData.name) return placeData.name;
+                
                 if (placeData.display_name) {
-                    return placeData.display_name.split(',')[0].trim();
+                    const parts = placeData.display_name.split(',');
+                    return parts[0].trim();
                 }
+                
+                if (placeData.address) {
+                    const addr = placeData.address;
+                    if (addr.pub) return addr.pub;
+                    if (addr.bar) return addr.bar;
+                    if (addr.restaurant) return addr.restaurant;
+                    if (addr.house_number && addr.road) {
+                        return `${addr.house_number} ${addr.road}`;
+                    }
+                    if (addr.road) return addr.road;
+                }
+                
                 return 'Unknown Location';
+            },
+
+            getPlaceType(place) {
+                if (place.type === 'pub' || place.type === 'bar') return 'Pub/Bar';
+                if (place.class === 'amenity' && place.type === 'restaurant') return 'Restaurant';
+                if (place.class === 'tourism') return 'Tourism';
+                if (place.class === 'shop') return 'Shop';
+                return 'Location';
             }
+        };
 
-            showResults() {
-                this.searchResults.classList.add('search-results--show');
-            }
+        // =====================================
+        // MODAL MANAGEMENT
+        // =====================================
+        const ModalManager = {
+            init() {
+                this.setupAddPubModal();
+                this.setupSubmitPriceModal();
+            },
 
-            hideResults() {
-                this.searchResults.classList.remove('search-results--show');
-            }
+            setupAddPubModal() {
+                const modal = document.getElementById("add-pub-modal");
+                const addPubBtn = document.getElementById("add-pub-btn");
+                const closeBtn = document.getElementById("close-add-pub");
+                const cancelBtn = document.getElementById("cancel-add-pub");
+                const submitBtn = document.getElementById("submit-pub-btn");
 
-            showErrorResult() {
-                this.searchResults.innerHTML = '<div class="search-item">Search error occurred</div>';
-                this.showResults();
-            }
-        }
-
-        // ========== MODAL MANAGER ==========
-        class ModalManager {
-            constructor(dataManager) {
-                this.dataManager = dataManager;
-                this.currentPub = null;
-                this.setupEventListeners();
-            }
-
-            setupEventListeners() {
-                // Add Pub Modal
-                document.getElementById('add-pub-btn').addEventListener('click', () => {
-                    this.openAddPubModal();
-                });
-
-                document.getElementById('close-add-pub').addEventListener('click', () => {
-                    this.closeAddPubModal();
-                });
-
-                document.getElementById('cancel-add-pub').addEventListener('click', () => {
-                    this.closeAddPubModal();
-                });
-
-                document.getElementById('submit-pub').addEventListener('click', () => {
-                    this.handleAddPubSubmit();
-                });
-
-                // Submit Price Modal
-                document.getElementById('close-submit-price').addEventListener('click', () => {
-                    this.closeSubmitPriceModal();
-                });
-
-                document.getElementById('cancel-submit-price').addEventListener('click', () => {
-                    this.closeSubmitPriceModal();
-                });
-
-                document.getElementById('submit-price').addEventListener('click', () => {
-                    this.handleSubmitPriceSubmit();
-                });
-
-                // Happy Hour Toggle Event Listeners
-                this.setupHappyHourToggles();
-            }
-
-            setupHappyHourToggles() {
-                // Add Pub Modal Happy Hour Toggle
-                const isHappyHourCheckbox = document.getElementById('is-happy-hour');
-                const happyHourDetails = document.getElementById('happy-hour-details');
-                
-                if (isHappyHourCheckbox && happyHourDetails) {
-                    isHappyHourCheckbox.addEventListener('change', () => {
-                        if (isHappyHourCheckbox.checked) {
-                            happyHourDetails.classList.add('happy-hour-details--show');
-                        } else {
-                            happyHourDetails.classList.remove('happy-hour-details--show');
-                        }
+                if (addPubBtn) {
+                    addPubBtn.addEventListener("click", () => {
+                        modal.style.display = "flex";
+                        this.resetAddPubForm();
+                        Utils.hideError();
                     });
                 }
 
-                // Submit Price Modal Happy Hour Toggles
-                const existingHappyHourCheckbox = document.getElementById('existing-is-happy-hour');
-                const existingHappyHourDetails = document.getElementById('existing-happy-hour-details');
-                
-                if (existingHappyHourCheckbox && existingHappyHourDetails) {
-                    existingHappyHourCheckbox.addEventListener('change', () => {
-                        if (existingHappyHourCheckbox.checked) {
-                            existingHappyHourDetails.classList.add('happy-hour-details--show');
-                        } else {
-                            existingHappyHourDetails.classList.remove('happy-hour-details--show');
-                        }
+                if (closeBtn) {
+                    closeBtn.addEventListener("click", () => {
+                        modal.style.display = "none";
+                        Utils.hideError();
                     });
                 }
 
-                const newHappyHourCheckbox = document.getElementById('new-is-happy-hour');
-                const newHappyHourDetails = document.getElementById('new-happy-hour-details');
-                
-                if (newHappyHourCheckbox && newHappyHourDetails) {
-                    newHappyHourCheckbox.addEventListener('change', () => {
-                        if (newHappyHourCheckbox.checked) {
-                            newHappyHourDetails.classList.add('happy-hour-details--show');
-                        } else {
-                            newHappyHourDetails.classList.remove('happy-hour-details--show');
-                        }
+                if (cancelBtn) {
+                    cancelBtn.addEventListener("click", () => {
+                        modal.style.display = "none";
+                        Utils.hideError();
                     });
                 }
-            }
 
-            openAddPubModal(prefillData = null) {
-                const modal = document.getElementById('add-pub-modal');
+                if (submitBtn) {
+                    submitBtn.addEventListener("click", () => this.handleAddPubSubmit());
+                }
+
+                // Setup happy hour checkbox
+                const happyHourCheckbox = document.getElementById("is-happy-hour");
+                const happyHourDetails = document.getElementById("happy-hour-details");
                 
-                // Reset form
-                document.getElementById('add-pub-form').reset();
-                Utils.hideError('add-pub-error');
+                if (happyHourCheckbox && happyHourDetails) {
+                    happyHourCheckbox.addEventListener("change", () => {
+                        happyHourDetails.style.display = happyHourCheckbox.checked ? "block" : "none";
+                    });
+                }
 
-                // Reset happy hour details
-                document.getElementById('happy-hour-details').classList.remove('happy-hour-details--show');
+                // Setup address search
+                this.setupAddressSearch();
+            },
 
-                // Prefill if data provided
-                if (prefillData) {
-                    document.getElementById('pub-name').value = prefillData.name || '';
-                    document.getElementById('pub-address').value = prefillData.address || '';
-                    document.getElementById('pub-lat').value = prefillData.lat || '';
-                    document.getElementById('pub-lon').value = prefillData.lon || '';
+            setupAddressSearch() {
+                const addressInput = document.getElementById("pub-address");
+                const addressResults = document.getElementById("address-results");
+
+                if (!addressInput || !addressResults) return;
+
+                addressInput.addEventListener("input", Utils.debounce(async () => {
+                    const query = addressInput.value.trim();
                     
-                    if (prefillData.lat && prefillData.lon) {
-                        app.mapManager.focusOnLocation(prefillData.lat, prefillData.lon);
+                    if (query.length < 3) {
+                        addressResults.style.display = "none";
+                        return;
+                    }
+                    
+                    try {
+                        const urls = [
+                            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Melbourne, Australia")}&limit=3&addressdetails=1&extratags=1`,
+                            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Victoria, Australia")}&limit=2&addressdetails=1&extratags=1`
+                        ];
+                        
+                        const response = await fetch(urls[0]);
+                        const data = await response.json();
+                        
+                        if (data && data.length > 0) {
+                            addressResults.innerHTML = data.map(place => `
+                                <div class="address-result-item" 
+                                     data-lat="${place.lat}" 
+                                     data-lon="${place.lon}" 
+                                     data-name="${place.name || place.display_name.split(',')[0]}" 
+                                     data-address="${place.display_name}">
+                                    <div class="place-name">${place.name || place.display_name.split(',')[0]}</div>
+                                    <div class="place-address">${place.display_name}</div>
+                                </div>
+                            `).join('');
+                            
+                            addressResults.style.display = "block";
+                            
+                            // Add click handlers
+                            addressResults.querySelectorAll('.address-result-item').forEach(item => {
+                                item.addEventListener('click', () => {
+                                    const lat = parseFloat(item.dataset.lat);
+                                    const lon = parseFloat(item.dataset.lon);
+                                    const name = item.dataset.name;
+                                    const address = item.dataset.address;
+                                    
+                                    // Check for duplicates
+                                    const duplicate = appState.pubs.find(pub => 
+                                        Math.abs(pub.lat - lat) < 0.001 && 
+                                        Math.abs(pub.lon - lon) < 0.001
+                                    );
+                                    
+                                    if (duplicate) {
+                                        Utils.showError(`This location already exists as "${duplicate.name}"`);
+                                        return;
+                                    }
+                                    
+                                    Utils.hideError();
+                                    
+                                    // Fill in the form
+                                    document.getElementById("pub-name").value = name;
+                                    addressInput.value = address;
+                                    document.getElementById("pub-lat").value = lat;
+                                    document.getElementById("pub-lon").value = lon;
+                                    
+                                    // Update map view
+                                    appState.map.setView([lat, lon], 16);
+                                    
+                                    // Hide results
+                                    addressResults.style.display = "none";
+                                });
+                            });
+                        } else {
+                            addressResults.innerHTML = '<div class="address-result-item">No locations found</div>';
+                            addressResults.style.display = "block";
+                        }
+                    } catch (error) {
+                        console.error("Address search error:", error);
+                        addressResults.style.display = "none";
+                    }
+                }, CONFIG.SEARCH_DELAY));
+
+                // Hide results when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!addressInput.contains(e.target) && !addressResults.contains(e.target)) {
+                        addressResults.style.display = "none";
+                    }
+                });
+            },
+
+            async handleAddPubSubmit() {
+                const elements = {
+                    name: document.getElementById("pub-name"),
+                    address: document.getElementById("pub-address"),
+                    lat: document.getElementById("pub-lat"),
+                    lon: document.getElementById("pub-lon"),
+                    category: document.getElementById("beer-category"),
+                    size: document.getElementById("beer-size"),
+                    price: document.getElementById("beer-price")
+                };
+
+                // Validate required elements exist
+                for (const [key, element] of Object.entries(elements)) {
+                    if (!element) {
+                        Utils.showError(`${key} field not found`);
+                        return;
                     }
                 }
 
-                modal.classList.add('modal--show');
-            }
+                const values = {
+                    name: elements.name.value.trim(),
+                    address: elements.address.value.trim(),
+                    lat: elements.lat.value.trim(),
+                    lon: elements.lon.value.trim(),
+                    category: elements.category.value,
+                    size: elements.size.value,
+                    price: parseFloat(elements.price.value)
+                };
 
-            closeAddPubModal() {
-                const modal = document.getElementById('add-pub-modal');
-                modal.classList.remove('modal--show');
-                Utils.hideError('add-pub-error');
-            }
+                // Validate required fields
+                if (!values.name) {
+                    Utils.showError("Pub name is required");
+                    return;
+                }
+                if (!values.address) {
+                    Utils.showError("Address is required");
+                    return;
+                }
+                if (!values.lat || !values.lon || isNaN(values.lat) || isNaN(values.lon)) {
+                    Utils.showError("Please validate the location before submitting");
+                    return;
+                }
+                if (!values.category || !values.size || !values.price || isNaN(values.price)) {
+                    Utils.showError("Please enter valid beer details");
+                    return;
+                }
 
-            async handleAddPubSubmit() {
-                const name = document.getElementById('pub-name').value.trim();
-                const address = document.getElementById('pub-address').value.trim();
-                const lat = parseFloat(document.getElementById('pub-lat').value);
-                const lon = parseFloat(document.getElementById('pub-lon').value);
-                const beerCategory = document.getElementById('beer-category').value;
-                const beerSize = document.getElementById('beer-size').value;
-                const beerPrice = parseFloat(document.getElementById('beer-price').value);
-                
-                // Happy Hour Data
-                const isHappyHour = document.getElementById('is-happy-hour').checked;
-                const happyHourStart = document.getElementById('happy-hour-start').value;
-                const happyHourEnd = document.getElementById('happy-hour-end').value;
-                const happyHourDaysSelect = document.getElementById('happy-hour-days');
+                // Get happy hour data
+                const isHappyHour = document.getElementById("is-happy-hour").checked;
+                const happyHourStart = document.getElementById("happy-hour-start").value;
+                const happyHourEnd = document.getElementById("happy-hour-end").value;
+                const happyHourDaysSelect = document.getElementById("happy-hour-days");
                 const happyHourDays = Array.from(happyHourDaysSelect.selectedOptions).map(opt => opt.value);
 
-                // Validation
-                if (!name || !address || !beerCategory || !beerSize || isNaN(lat) || isNaN(lon) || isNaN(beerPrice)) {
-                    Utils.showError('add-pub-error', 'Please fill in all required fields');
-                    return;
-                }
-
-                if (isHappyHour && (!happyHourStart || !happyHourEnd || happyHourDays.length === 0)) {
-                    Utils.showError('add-pub-error', 'Please fill in all happy hour details if marking as happy hour');
-                    return;
-                }
-
                 const newPub = {
-                    id: this.dataManager.pubs.length + 1,
-                    name,
-                    address,
-                    lat,
-                    lon,
+                    id: appState.pubs.length + 1,
+                    name: values.name,
+                    address: values.address,
+                    lat: parseFloat(values.lat),
+                    lon: parseFloat(values.lon),
                     beers: [{
-                        name: beerCategory,
-                        size: beerSize,
-                        price: beerPrice,
+                        name: values.category,
+                        size: values.size,
+                        price: values.price,
                         is_happy_hour: isHappyHour,
                         happy_hour_start: isHappyHour ? happyHourStart : null,
                         happy_hour_end: isHappyHour ? happyHourEnd : null,
@@ -1852,203 +1944,363 @@
                 };
 
                 try {
-                    await this.dataManager.savePub(newPub);
-                    app.updateDisplay();
-                    this.closeAddPubModal();
-                } catch (error) {
-                    Utils.showError('add-pub-error', `Failed to save pub: ${error.message}`);
+                    await DataManager.updatePubInDatabase(newPub);
+                    document.getElementById("add-pub-modal").style.display = "none";
+                } catch (err) {
+                    Utils.showError(`Failed to save pub: ${err.message}`);
                 }
-            }
+            },
 
-            openSubmitPriceModal(pub) {
-                this.currentPub = pub;
-                const modal = document.getElementById('submit-price-modal');
-                
-                // Reset form
-                document.getElementById('submit-price-form').reset();
-                Utils.hideError('submit-price-error');
-
-                // Reset happy hour details
-                document.getElementById('existing-happy-hour-details').classList.remove('happy-hour-details--show');
-                document.getElementById('new-happy-hour-details').classList.remove('happy-hour-details--show');
-                document.getElementById('existing-is-happy-hour').checked = false;
-                document.getElementById('new-is-happy-hour').checked = false;
-
-                // Populate existing beer categories from this pub
-                const existingBeerSelect = document.getElementById('existing-beer-select');
-                existingBeerSelect.innerHTML = '<option value="">-- Select a beer --</option>';
-                
-                const uniqueCategories = [...new Set(pub.beers.map(beer => beer.name))];
-                uniqueCategories.forEach(category => {
-                    const option = document.createElement('option');
-                    option.value = category;
-                    option.textContent = BEER_CATEGORIES[category] || category;
-                    existingBeerSelect.appendChild(option);
+            resetAddPubForm() {
+                const fields = ["pub-name", "pub-address", "pub-lat", "pub-lon", "beer-price"];
+                fields.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.value = "";
                 });
 
-                modal.classList.add('modal--show');
-            }
+                const selects = ["beer-category", "beer-size"];
+                selects.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.selectedIndex = 0;
+                });
 
-            closeSubmitPriceModal() {
-                const modal = document.getElementById('submit-price-modal');
-                modal.classList.remove('modal--show');
-                Utils.hideError('submit-price-error');
-                this.currentPub = null;
-            }
+                const checkbox = document.getElementById("is-happy-hour");
+                if (checkbox) {
+                    checkbox.checked = false;
+                    document.getElementById("happy-hour-details").style.display = "none";
+                }
+            },
+
+            setupSubmitPriceModal() {
+                const modal = document.getElementById("submit-price-modal");
+                const closeBtn = document.getElementById("close-submit-price");
+                const cancelBtn = document.getElementById("cancel-submit-price");
+                const submitBtn = document.getElementById("submit-price-btn");
+
+                if (closeBtn) {
+                    closeBtn.addEventListener("click", () => {
+                        modal.style.display = "none";
+                    });
+                }
+
+                if (cancelBtn) {
+                    cancelBtn.addEventListener("click", () => {
+                        modal.style.display = "none";
+                    });
+                }
+
+                if (submitBtn) {
+                    submitBtn.addEventListener("click", () => this.handleSubmitPriceSubmit());
+                }
+
+                // Setup happy hour checkbox for new beer
+                const newHappyHourCheckbox = document.getElementById("new-is-happy-hour");
+                const newHappyHourDetails = document.getElementById("new-happy-hour-details");
+                
+                if (newHappyHourCheckbox && newHappyHourDetails) {
+                    newHappyHourCheckbox.addEventListener("change", () => {
+                        newHappyHourDetails.style.display = newHappyHourCheckbox.checked ? "block" : "none";
+                    });
+                }
+            },
+
+            openSubmitPriceModal(pub) {
+                const modal = document.getElementById("submit-price-modal");
+                const existingBeersList = document.getElementById("existing-beers-list");
+                
+                if (!modal || !existingBeersList || !pub) return;
+
+                // Setup the form for selecting existing beers
+                existingBeersList.innerHTML = `
+                    <h3>Update Existing Beer Price</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="existing-beer-select">Select Beer</label>
+                            <select id="existing-beer-select">
+                                <option value="">-- Select a category --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="existing-beer-size-select">Size</label>
+                            <select id="existing-beer-size-select">
+                                <option value="pint">Pint</option>
+                                <option value="schooner">Schooner</option>
+                                <option value="pot">Pot</option>
+                                <option value="bottle">Bottle</option>
+                                <option value="can">Can</option>
+                                <option value="jug">Jug</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="existing-beer-price">Price (AUD)</label>
+                        <input type="number" id="existing-beer-price" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="existing-is-happy-hour"> This is a Happy Hour price!
+                        </label>
+                    </div>
+
+                    <div id="existing-happy-hour-details" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="existing-happy-hour-start">Start Time</label>
+                                <input type="time" id="existing-happy-hour-start">
+                            </div>
+                            <div class="form-group">
+                                <label for="existing-happy-hour-end">End Time</label>
+                                <input type="time" id="existing-happy-hour-end">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="existing-happy-hour-days">Days</label>
+                            <select id="existing-happy-hour-days" multiple>
+                                <option value="monday">Monday</option>
+                                <option value="tuesday">Tuesday</option>
+                                <option value="wednesday">Wednesday</option>
+                                <option value="thursday">Thursday</option>
+                                <option value="friday">Friday</option>
+                                <option value="saturday">Saturday</option>
+                                <option value="sunday">Sunday</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listener for the existing happy hour checkbox
+                setTimeout(() => {
+                    const existingHappyHourCheckbox = document.getElementById("existing-is-happy-hour");
+                    const existingHappyHourDetails = document.getElementById("existing-happy-hour-details");
+                    
+                    if (existingHappyHourCheckbox && existingHappyHourDetails) {
+                        existingHappyHourCheckbox.addEventListener("change", () => {
+                            existingHappyHourDetails.style.display = existingHappyHourCheckbox.checked ? "block" : "none";
+                        });
+                    }
+                }, 100);
+
+                // Populate with beers from this pub
+                this.populateBeerDropdownForPub(pub);
+                
+                modal.style.display = "flex";
+            },
+
+            populateBeerDropdownForPub(pub) {
+                const beerSelect = document.getElementById("existing-beer-select");
+                if (!beerSelect) return;
+
+                // Get unique beer categories from this specific pub
+                const uniqueCategoriesAtThisPub = [...new Set(pub.beers.map(beer => beer.name))];
+                
+                // Clear existing options except the first one
+                beerSelect.innerHTML = '<option value="">-- Select a category --</option>';
+                
+                // Add category options from this pub only
+                uniqueCategoriesAtThisPub.forEach(category => {
+                    const option = document.createElement("option");
+                    option.value = category;
+                    option.textContent = BEER_CATEGORIES[category] || category;
+                    beerSelect.appendChild(option);
+                });
+            },
 
             async handleSubmitPriceSubmit() {
-                if (!this.currentPub) {
-                    Utils.showError('submit-price-error', 'No pub selected');
+                if (!appState.currentPubForPriceUpdate) {
+                    alert("No pub selected.");
                     return;
                 }
 
                 let hasUpdates = false;
 
                 // Handle existing beer price update
-                const existingBeer = document.getElementById('existing-beer-select').value;
-                const existingSize = document.getElementById('existing-beer-size').value;
-                const existingPrice = parseFloat(document.getElementById('existing-beer-price').value);
-                const existingIsHappyHour = document.getElementById('existing-is-happy-hour').checked;
+                const existingBeerSelect = document.getElementById("existing-beer-select");
+                const existingBeerSizeSelect = document.getElementById("existing-beer-size-select");
+                const existingBeerPriceInput = document.getElementById("existing-beer-price");
 
-                if (existingBeer && !isNaN(existingPrice) && existingPrice > 0) {
-                    const existingHappyHourStart = document.getElementById('existing-happy-hour-start').value;
-                    const existingHappyHourEnd = document.getElementById('existing-happy-hour-end').value;
-                    const existingHappyHourDaysSelect = document.getElementById('existing-happy-hour-days');
-                    const existingHappyHourDays = Array.from(existingHappyHourDaysSelect.selectedOptions).map(opt => opt.value);
+                const selectedBeer = existingBeerSelect?.value;
+                const selectedPrice = parseFloat(existingBeerPriceInput?.value);
+                const selectedSize = existingBeerSizeSelect?.value;
 
-                    if (existingIsHappyHour && (!existingHappyHourStart || !existingHappyHourEnd || existingHappyHourDays.length === 0)) {
-                        Utils.showError('submit-price-error', 'Please fill in all happy hour details for existing beer if marking as happy hour');
-                        return;
+                if (selectedBeer && !isNaN(selectedPrice) && selectedPrice > 0) {
+                    const isExistingHappyHour = document.getElementById("existing-is-happy-hour")?.checked || false;
+                    const existingHappyHourStart = document.getElementById("existing-happy-hour-start")?.value;
+                    const existingHappyHourEnd = document.getElementById("existing-happy-hour-end")?.value;
+                    const existingHappyHourDaysSelect = document.getElementById("existing-happy-hour-days");
+                    const existingHappyHourDays = existingHappyHourDaysSelect ? Array.from(existingHappyHourDaysSelect.selectedOptions).map(opt => opt.value) : [];
+
+                    const beerData = {
+                        name: selectedBeer,
+                        size: selectedSize,
+                        price: selectedPrice,
+                        is_happy_hour: isExistingHappyHour,
+                        happy_hour_start: isExistingHappyHour ? existingHappyHourStart : null,
+                        happy_hour_end: isExistingHappyHour ? existingHappyHourEnd : null,
+                        happy_hour_days: isExistingHappyHour ? existingHappyHourDays : null
+                    };
+
+                    const existingBeerIndex = appState.currentPubForPriceUpdate.beers.findIndex(
+                        beer => beer.name === selectedBeer && beer.size === selectedSize
+                    );
+
+                    if (existingBeerIndex >= 0) {
+                        appState.currentPubForPriceUpdate.beers[existingBeerIndex] = {
+                            ...appState.currentPubForPriceUpdate.beers[existingBeerIndex],
+                            ...beerData
+                        };
+                    } else {
+                        appState.currentPubForPriceUpdate.beers.push(beerData);
                     }
-
-                    this.currentPub.beers.push({
-                        name: existingBeer,
-                        size: existingSize,
-                        price: existingPrice,
-                        last_updated: new Date().toISOString(),
-                        is_happy_hour: existingIsHappyHour,
-                        happy_hour_start: existingIsHappyHour ? existingHappyHourStart : null,
-                        happy_hour_end: existingIsHappyHour ? existingHappyHourEnd : null,
-                        happy_hour_days: existingIsHappyHour ? existingHappyHourDays : null
-                    });
                     hasUpdates = true;
                 }
 
                 // Handle new beer addition
-                const category = document.getElementById('price-category').value;
-                const size = document.getElementById('price-size').value;
-                const price = parseFloat(document.getElementById('price-amount').value);
-                const newIsHappyHour = document.getElementById('new-is-happy-hour').checked;
+                const newBeerCategoryInput = document.getElementById("new-beer-category");
+                const newBeerSizeInput = document.getElementById("new-beer-size");
+                const newBeerPriceInput = document.getElementById("new-beer-price");
 
-                if (category && !isNaN(price) && price > 0) {
-                    const newHappyHourStart = document.getElementById('new-happy-hour-start').value;
-                    const newHappyHourEnd = document.getElementById('new-happy-hour-end').value;
-                    const newHappyHourDaysSelect = document.getElementById('new-happy-hour-days');
-                    const newHappyHourDays = Array.from(newHappyHourDaysSelect.selectedOptions).map(opt => opt.value);
+                if (newBeerCategoryInput && newBeerSizeInput && newBeerPriceInput) {
+                    const newBeerCategory = newBeerCategoryInput.value;
+                    const newBeerSize = newBeerSizeInput.value;
+                    const newBeerPrice = parseFloat(newBeerPriceInput.value);
 
-                    if (newIsHappyHour && (!newHappyHourStart || !newHappyHourEnd || newHappyHourDays.length === 0)) {
-                        Utils.showError('submit-price-error', 'Please fill in all happy hour details for new beer if marking as happy hour');
-                        return;
+                    if (newBeerCategory && !isNaN(newBeerPrice) && newBeerPrice > 0) {
+                        const isNewHappyHour = document.getElementById("new-is-happy-hour")?.checked || false;
+                        const newHappyHourStart = document.getElementById("new-happy-hour-start")?.value;
+                        const newHappyHourEnd = document.getElementById("new-happy-hour-end")?.value;
+                        const newHappyHourDaysSelect = document.getElementById("new-happy-hour-days");
+                        const newHappyHourDays = newHappyHourDaysSelect ? Array.from(newHappyHourDaysSelect.selectedOptions).map(opt => opt.value) : [];
+
+                        appState.currentPubForPriceUpdate.beers.push({
+                            name: newBeerCategory,
+                            size: newBeerSize,
+                            price: newBeerPrice,
+                            is_happy_hour: isNewHappyHour,
+                            happy_hour_start: isNewHappyHour ? newHappyHourStart : null,
+                            happy_hour_end: isNewHappyHour ? newHappyHourEnd : null,
+                            happy_hour_days: isNewHappyHour ? newHappyHourDays : null
+                        });
+                        hasUpdates = true;
                     }
-
-                    // Add new beer to pub
-                    this.currentPub.beers.push({
-                        name: category,
-                        size: size,
-                        price: price,
-                        last_updated: new Date().toISOString(),
-                        is_happy_hour: newIsHappyHour,
-                        happy_hour_start: newIsHappyHour ? newHappyHourStart : null,
-                        happy_hour_end: newIsHappyHour ? newHappyHourEnd : null,
-                        happy_hour_days: newIsHappyHour ? newHappyHourDays : null
-                    });
-                    hasUpdates = true;
                 }
 
                 if (!hasUpdates) {
-                    Utils.showError('submit-price-error', 'Please enter at least one beer price');
+                    alert("Please enter at least one beer price update.");
                     return;
                 }
 
                 try {
-                    await this.dataManager.savePub(this.currentPub);
-                    app.updateDisplay();
-                    this.closeSubmitPriceModal();
+                    await DataManager.updatePubInDatabase(appState.currentPubForPriceUpdate);
+                    document.getElementById("submit-price-modal").style.display = "none";
+                    
+                    // Clear form fields
+                    this.clearPriceForm();
                 } catch (error) {
-                    Utils.showError('submit-price-error', `Failed to submit price: ${error.message}`);
+                    console.error("Failed to update pub prices:", error);
+                    alert("Failed to update pub prices. Please try again.");
                 }
-            }
-        }
+            },
 
-        // ========== MAIN APPLICATION ==========
-        class BeerSpyApp {
-            constructor() {
-                this.dataManager = new DataManager();
-                this.mapManager = new MapManager(this.dataManager);
-                this.modalManager = new ModalManager(this.dataManager);
-            }
-
-            async initialize() {
-                try {
-                    console.log("Initializing BeerSpy...");
-                    
-                    // Initialize map
-                    await this.mapManager.initialize();
-                    
-                    // Initialize search
-                    this.searchManager = new SearchManager(this.dataManager, this.mapManager);
-                    
-                    // Setup size filter
-                    this.setupSizeFilter();
-                    
-                    // Load data and render
-                    await this.dataManager.loadData();
-                    this.updateDisplay();
-                    
-                    console.log("BeerSpy initialized successfully");
-                } catch (error) {
-                    console.error("Failed to initialize BeerSpy:", error);
-                    Utils.showError('add-pub-error', `Failed to initialize: ${error.message}`);
-                }
-            }
-
-            setupSizeFilter() {
-                const sizeFilter = document.getElementById('size-filter');
-                sizeFilter.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('size-btn')) {
-                        // Update active button
-                        sizeFilter.querySelectorAll('.size-btn').forEach(btn => {
-                            btn.classList.remove('size-btn--active');
-                        });
-                        e.target.classList.add('size-btn--active');
-                        
-                        // Update current size and re-render
-                        this.dataManager.setCurrentSize(e.target.dataset.size);
-                        this.updateDisplay();
-                    }
+            clearPriceForm() {
+                const clearElements = [
+                    "existing-beer-select", "existing-beer-price", 
+                    "new-beer-category", "new-beer-price"
+                ];
+                clearElements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.value = "";
                 });
             }
+        };
 
-            updateDisplay() {
-                this.mapManager.renderPubs();
-                this.updateStatistics();
-            }
-
-            updateStatistics() {
-                const stats = this.dataManager.getStatistics();
+        // =====================================
+        // STATISTICS
+        // =====================================
+        const Statistics = {
+            update() {
+                const totalPubs = appState.pubs.length;
                 
-                document.getElementById('pubs-count').textContent = stats.totalPubs;
-                document.getElementById('beers-count').textContent = stats.totalBeers;
-                document.getElementById('avg-price').textContent = stats.avgPrice;
+                const uniqueBeerNames = new Set();
+                appState.pubs.forEach((pub) => {
+                    pub.beers.forEach((beer) => {
+                        uniqueBeerNames.add(beer.name);
+                    });
+                });
+                const totalUniqueBeers = uniqueBeerNames.size;
+
+                const prices = [];
+                appState.pubs.forEach((pub) => {
+                    const beersForSize = pub.beers.filter((beer) => beer.size === appState.currentSize);
+                    beersForSize.forEach((beer) => prices.push(beer.price));
+                });
+
+                const avgPriceValue = prices.length > 0
+                    ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
+                    : "N/A";
+
+                const elements = {
+                    pubsCount: document.getElementById("pubs-count"),
+                    beersCount: document.getElementById("beers-count"),
+                    avgPrice: document.getElementById("avg-price")
+                };
+
+                if (elements.pubsCount) elements.pubsCount.textContent = totalPubs;
+                if (elements.beersCount) elements.beersCount.textContent = totalUniqueBeers;
+                if (elements.avgPrice) elements.avgPrice.textContent = avgPriceValue === "N/A" ? "N/A" : `$${avgPriceValue}`;
             }
-        }
+        };
 
-        // ========== APPLICATION STARTUP ==========
-        let app;
+        // =====================================
+        // EVENT LISTENERS
+        // =====================================
+        const EventListeners = {
+            init() {
+                // Size filter buttons
+                document.querySelectorAll(".size-btn").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        document.querySelectorAll(".size-btn").forEach((b) => b.classList.remove("active"));
+                        btn.classList.add("active");
+                        appState.currentSize = btn.dataset.size;
+                        if (appState.pubs.length > 0) {
+                            MapManager.renderMarkers();
+                        }
+                    });
+                });
+            }
+        };
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            app = new BeerSpyApp();
-            await app.initialize();
+        // =====================================
+        // APPLICATION INITIALIZATION
+        // =====================================
+        document.addEventListener("DOMContentLoaded", async function () {
+            try {
+                console.log("Initializing BeerSpy application...");
+                
+                // Initialize application state
+                appState.init();
+                
+                // Initialize map with location detection
+                await MapManager.initialize();
+                
+                // Setup event listeners
+                EventListeners.init();
+                
+                // Initialize modal management
+                ModalManager.init();
+                
+                // Initialize search functionality
+                SearchManager.init();
+                
+                // Fetch and display data
+                await DataManager.fetchBeerPrices();
+                
+                console.log("BeerSpy application initialized successfully!");
+                
+            } catch (error) {
+                console.error("BeerSpy initialization error:", error);
+                Utils.showError(`App failed to initialize: ${error.message}`);
+            }
         });
     </script>
 </body>
