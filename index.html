@@ -1349,19 +1349,15 @@
         const mostRecentUpdate = beers.reduce((latest, beer) => {
         if (!beer.last_updated) return latest;
 
-        // Convert "YYYY-MM-DD HH:mm:ss" to "YYYY-MM-DDTHH:mm:ss"
-        const localString = beer.last_updated.replace(' ', 'T');
-        const beerDate = new Date(localString); // Interpreted as local time
+        // Parse UTC timestamp
+        const beerDateUTC = new Date(beer.last_updated);
 
-        return !latest || beerDate > latest ? beerDate : latest;
+        return !latest || beerDateUTC > latest ? beerDateUTC : latest;
         }, null);
 
-
-
-
-       
+        // Display in local time
         const lastUpdatedDate = mostRecentUpdate 
-        ? `${mostRecentUpdate.toLocaleDateString()} at ${mostRecentUpdate.toLocaleTimeString('en-AU', { hour12: false })}`
+        ? `${mostRecentUpdate.toLocaleDateString(undefined, { timeZoneName: 'short' })} at ${mostRecentUpdate.toLocaleTimeString('en-AU', { hour12: false })}`
         : `${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString('en-AU', { hour12: false })}`;
 
         content += `
