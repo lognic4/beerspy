@@ -855,27 +855,7 @@
           
           
           // Update statistics
-          function updateStatistics() {
-              const totalPubs = pubs.length;
-              const totalBeers = pubs.reduce((total, pub) => total + pub.beers.length, 0);
-              
-              // Calculate average price based on current size and all pubs
-              const prices = [];
-              pubs.forEach(pub => {
-                  const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
-                  if (beersForSize.length > 0) {
-                      beersForSize.forEach(beer => prices.push(beer.price));
-                  }
-              });
-              
-              const avgPrice = prices.length > 0 
-                  ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
-                  : "N/A";
-              
-              document.getElementById('pubs-count').textContent = totalPubs;
-              document.getElementById('beers-count').textContent = totalBeers;
-              document.getElementById('avg-price').textContent = `$${avgPrice}`;
-          }
+          
           
           // Renders pubs on the map
           function createCustomIcon(price) {
