@@ -804,668 +804,655 @@
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <script type="module">
-      import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-    
-      // Using environment variables for sensible secrets in production
-      const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";  // Replace with your actual project URL
-      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc";          // Replace with your actual API key
-      
-      // Initialize Supabase client
-      const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log("Supabase client initialized", sbClient);
-      
-      // Dummy data for local testing if you want to run without Supabase
-      let testMode = false;
-      if (testMode) {
-        console.log("Running in test mode - using local data only");
+    <!-- Make sure you have Leaflet’s CSS and JS imported in your HTML before this script! -->
+
+    <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    integrity="sha256-sA+rlrLfkWqLCM51KzJLpq9c+JYjvoiLO0lgMqmXg=="
+    crossorigin=""
+    />
+
+
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.28.0/dist/esm/index.js';
+
+  // Using environment variables for sensible secrets in production
+  const SUPABASE_URL = "https://bvuuhxlsilmroyidaovp.supabase.co";  // Replace with your actual project URL
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dXVoeGxzaWxtcm95aWRhb3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MTYzMzgsImV4cCI6MjA1ODk5MjMzOH0.eCueNnzM6ezrpsRqaILPefnFTuRRvhr0g_cWIguqYzc"; // Replace with your actual API key
+
+  // Initialize Supabase client
+  const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  console.log("Supabase client initialized", sbClient);
+
+  // Dummy data for local testing if you want to run without Supabase
+  let testMode = false;
+  if (testMode) {
+    console.log("Running in test mode - using local data only");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("BeerSpy app initialized");
+
+    try {
+      // Create map with Melbourne coordinates
+      const map = L.map("map").setView([-37.8136, 144.9631], 13);
+
+      // Add OpenStreetMap layer
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      // =====================================
+      // DATA MANAGEMENT
+      // =====================================
+      let pubs = [];
+
+      // Current beer size filter
+      let currentSize = "pint";
+      let markers = [];
+
+      updateStatistics();
+      setupEventListeners();
+      fetchBeerPrices(); // Only call this once here
+
+      // =====================================
+      // MAP MARKER PLACEMENT
+      // =====================================
+      function createCustomIcon(price) {
+        return L.divIcon({
+          className: "custom-marker",
+          html: `
+            <div class="price-bubble">$${price.toFixed(2)}</div>
+            <div class="marker-arrow"></div>
+          `,
+          iconSize: [60, 60],
+          iconAnchor: [30, 60],
+        });
       }
-      
-      document.addEventListener("DOMContentLoaded", function() {
-        console.log("BeerSpy app initialized");
-        
+
+      // Reset the form
+      function resetForm() {
+        document.getElementById("pub-name").value = "";
+        document.getElementById("pub-address").value = "";
+        document.getElementById("pub-lat").value = "";
+        document.getElementById("pub-lon").value = "";
+        document.getElementById("beer-name").value = "";
+        document.getElementById("beer-size").value = "pint";
+        document.getElementById("beer-price").value = "";
+      }
+
+      // =====================================
+      // GEOCODING FUNCTION
+      // =====================================
+      async function geocodeAddress(address) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          address
+        )}&limit=1`;
+
         try {
-          // Create map with Melbourne coordinates
-          const map = L.map('map').setView([-37.8136, 144.9631], 13);
-          
-          // Add OpenStreetMap layer
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '&copy; OpenStreetMap contributors'
-          }).addTo(map);
-          
-          // =====================================
-          // DATA MANAGEMENT
-          // =====================================
-          let pubs = [];
-          
-          // Current beer size filter
-          let currentSize = "pint";
-          let markers = [];
+          const response = await fetch(url);
+          const data = await response.json();
 
-          updateStatistics();
+          if (data && data.length > 0) {
+            const firstResult = data[0];
+            const lat = parseFloat(firstResult.lat);
+            const lon = parseFloat(firstResult.lon);
 
-          setupEventListeners();
-
-          fetchBeerPrices();
-          
-          // =====================================
-          // MAP MARKER PLACEMENT
-          // =====================================
-          // Creates a divIcon with custom CSS for entirely custom marker appearance
-          
-          
-          // Update statistics
-          
-          
-          // Renders pubs on the map
-          function createCustomIcon(price) {
-            return L.divIcon({
-                className: 'custom-marker',
-                html: `
-                    <div class="price-bubble">$${price.toFixed(2)}</div>
-                    <div class="marker-arrow"></div>
-
-                `,
-                iconSize: [60,60],
-                iconAnchor: [30,60]
-            });
-          }
-          
-          // Reset the form
-          function resetForm() {
-              document.getElementById('pub-name').value = '';
-              document.getElementById('pub-address').value = '';
-              document.getElementById('pub-lat').value = '';
-              document.getElementById('pub-lon').value = '';
-              document.getElementById('beer-name').value = '';
-              document.getElementById('beer-size').value = 'pint';
-              document.getElementById('beer-price').value = '';
-          }
-          
-          // =====================================
-          // GEOCODING FUNCTION
-          // =====================================
-          async function geocodeAddress(address) {
-              // Use OpenStreetMap Nominatim API for geocoding
-              const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
-              
-              try {
-                  const response = await fetch(url);
-                  const data = await response.json();
-                  
-                  if (data && data.length > 0) {
-                      const firstResult = data[0];
-                      const lat = parseFloat(firstResult.lat);
-                      const lon = parseFloat(firstResult.lon);
-                      
-                      if (!isNaN(lat) && !isNaN(lon)) {
-                          // Update form fields
-                          document.getElementById('pub-lat').value = lat;
-                          document.getElementById('pub-lon').value = lon;
-                          
-                          // Zoom to location
-                          map.setView([lat, lon], 16);
-                          return true;
-                      }
-                  }
-                  
-                  alert('Location not found. Please try a different address.');
-                  return false;
-              
-              } catch (error) {
-                  console.error('Geocoding error:', error);
-                  alert('Error finding location. Please check your internet connection.');
-                  return false;
-              }
-          }
-          
-          // =====================================
-          // FETCH DATA FROM SUPABASE
-          // =====================================
-          async function fetchBeerPrices() {
-            try {
-              if (testMode) {
-                // Use local test data
-                pubs = [
-                  {
-                    id: 1,
-                    name: "The Lagerhaus",
-                    address: "250 Collins St, Melbourne VIC 3000",
-                    lat: -37.8140,
-                    lon: 144.9643,
-                    beers: [
-                      { name: "Mega Beer", size: "pint", price: 7.50 },
-                      { name: "Hoppy IPA", size: "pint", price: 9.00 },
-                      { name: "Golden Ale", size: "pint", price: 7.00 }
-                    ]
-                  },
-                  {
-                    id: 2,
-                    Name: "Hoppy Hop",
-                    address: "45 Bourke St, Melbourne VIC 3000",
-                    lat: -37.8240,
-                    lon: 144.9843,
-                    beers: [
-                      { name: "IPA Special", size: "schooner", price: 5.50 },
-                      { name: "Stout", size: "pot", price: 6.50 }
-                    ]
-                  }
-                ];
-                renderPubs();
-                console.log("Using local test data");
-                return;
-              }
-              
-              const { data, error } = await sbClient
-                .from("beer_prices")
-                .select("*");
-              
-              if (error) {
-                console.error("Error fetching beer prices from Supabase:", error.message);
-                // Try to use local data as fallback
-                renderPubs();
-                return;
-              }
-              
-              if (!data || data.length === 0) {
-                console.warn("No data fetched from Supabase - using local data");
-                renderPubs();
-                return;
-              }
-              
-              console.log("Fetched beer prices:", data);
-              processSupabaseData(data);
-              renderPubs();
-            } catch (err) {
-              console.error("Fetch from Supabase error:", err);
-              // Try to use local data as fallback
-              renderPubs();
+            if (!isNaN(lat) && !isNaN(lon)) {
+              document.getElementById("pub-lat").value = lat;
+              document.getElementById("pub-lon").value = lon;
+              map.setView([lat, lon], 16);
+              return true;
             }
           }
-          
-          function processSupabaseData(beerPrices) {
-            // Group by pub using unique combination of name, lat, lon
-            const pubsMap = new Map();
-            
-            beerPrices.forEach(item => {
-              const pubKey = `${item.pub_name}-${item.lat}-${item.lon}`;
-              
-              if (!pubsMap.has(pubKey)) {
-                pubsMap.set(pubKey, {
-                  id: pubsMap.size + 1,
-                  name: item.pub_name,
-                  address: item.location || "", // Use location field as address
-                  lat: item.lat,
-                  lon: item.lon,
-                  beers: []
-                });
-              }
-              
-              const pub = pubsMap.get(pubKey);
-              pub.beers.push({
-                name: item.beer_name,
-                size: item.size,
-                price: item.price
-              });
-            });
-            
-            pubs = Array.from(pubsMap.values());
-            console.log("Processed pubs:", pubs);
-          }
-          
-          // =====================================
-          // UPDATE SUPABASE DATABASE
-          // =====================================
-          async function updatePubInDatabase(pub) {
-            console.log("Updating pub in database:", pub);
-            
-            try {
-              if (testMode) {
-                // Just update local data in test mode
-                console.log("Not updating Supabase - test mode enabled");
-                pubs = pubs.map(p => p.id === pub.id ? pub : p);
-                renderPubs();
-                // Clear error message
-                document.getElementById('error-message').innerText = '';
-                return;
-              }
-              
-              // First, delete existing records for this pub
-              const { error: deleteError } = await sbClient
-                .from('beer_prices')
-                .delete()
-                .eq('pub_name', pub.name)
-                .eq('lat', pub.lat)
-                .eq('lon', pub.lon);
-              
-              if (deleteError) {
-                console.error("Error deleting old records:", deleteError.message);
-                document.getElementById('error-message').innerText = `Error deleting existing data: ${deleteError.message}`;
-                return;
-              }
-              
-              // Now insert new records
-              const newRecords = pub.beers.map(beer => ({
-                pub_name: pub.name,
-                beer_name: beer.name,
-                size: beer.size,
-                price: beer.price,
-                lat: pub.lat,
-                lon: pub.lon,
-                location: pub.address,
-                last_updated: new Date().toISOString()
-              }));
-              
-              const { error: insertError } = await sbClient
-                .from('beer_prices')
-                .insert(newRecords);
-              
-              if (insertError) {
-                console.error("Error inserting new records:", insertError.message);
-                document.getElementById('error-message').innerText = `Error saving pub: ${insertError.message}`;
-                return;
-              }
-              
-              // Update local pubs data
-              pubs = pubs.map(p => p.id === pub.id ? pub : p);
-              
-              console.log("Pub successfully updated in database");
-            } catch (err) {
-              console.error("Database update error:", err);
-              document.getElementById('error-message').innerText = `Database error: ${err.message}`;
-            }
-          }
-          
-          // =====================================
-          // EVENT HANDLERS
-          // =====================================
-          // Handles when a marker is clicked
-          function updateStatistics() {
-            const totalPubs = pubs.length;
-            const totalBeers = pubs.reduce((total, pub) => total + pub.beers.length, 0);
-            
-            const prices = [];
-            pubs.forEach(pub => {
-                const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
-                beersForSize.forEach(beer => prices.push(beer.price));
-            });
-            
-            const avgPriceValue = prices.length > 0 
-                ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
-                : "N/A";
-                
-            // Update stats display
-            document.getElementById('pubs-count').textContent = totalPubs;
-            document.getElementById('beers-count').textContent = totalBeers;
-            document.getElementById('avg-price').textContent = `$${avgPriceValue}`;
-        }
 
-        // Function to setup event listeners
-        function setupEventListeners() {
-            // Size filter buttons
-            document.querySelectorAll('.size-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    currentSize = this.dataset.size;
-                    
-                    // Re-render markers if pubs data is available
-                    if (pubs.length > 0) {
-                        renderPubs();
-                    }
-                });
-            });
-
-            // Map click overlay to allow toggling markers
-            document.getElementById('map-overlay').addEventListener('click', function() {
-                // Close all marker popups
-                markers.forEach(marker => {
-                    if (marker && marker.getPopup && marker.getPopup().isOpen()) {
-                        marker.getPopup().close();
-                    }
-                });
-            });
-        }
-
-        // Function to render pubs on map
-        function renderPubs() {
-            // Clear previous markers
-            markers.forEach(marker => map.removeLayer(marker));
-            markers = [];
-            
-            pubs.forEach(pub => {
-                const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
-                
-                if (beersForSize.length === 0) return;
-                
-                const minPrice = Math.min(...beersForSize.map(beer => beer.price));
-                const marker = L.marker([pub.lat, pub.lon], {
-                    icon: createCustomIcon(minPrice)
-                }).addTo(map);
-                
-                marker.pubData = pub;
-                marker.on('click', onMarkerClick);
-                markers.push(marker);
-            });
-        }
-
-        // Function to handle marker clicks
-        function onMarkerClick(e) {
-            const pub = e.target.pubData;
-            
-            // Filter beers for current size
-            const beersForSize = pub.beers.filter(beer => beer.size === currentSize);
-            
-            // Open popup with delay to allow click to register
-            setTimeout(() => {
-                e.target.bindPopup(createPopupContent(pub, beersForSize)).openPopup();
-            }, 50);
-        }
-
-        // Function to create popup content
-        function createPopupContent(pub, beers) {
-            let content = `
-                <div class="pub-popup">
-                    <h3>${pub.name}</h3>
-                    <div class="address">${pub.address}</div>
-                    <table class="beer-table">
-                        <tr>
-                            <th>Beer</th>
-                            <th>Size</th>
-                            <th>Price</th>
-                        </tr>
-            `;
-            
-            beers.forEach(beer => {
-                content += `
-                    <tr>
-                        <td>${beer.name}</td>
-                        <td>${beer.size}</td>
-                        <td class="beer-price">$${beer.price.toFixed(2)}</td>
-                    </tr>
-                `;
-            });
-            
-            content += `
-                    </table>
-                    <div class="last-updated">Updated: ${new Date().toLocaleDateString()}</div>
-                    <div class="popup-actions">
-                        <button class="add-beer-btn">Add New Beer</button>
-                    </div>
-                </div>
-            `;
-            
-            return content;
-        }
-          
-          // Modal controls
-          const modal = document.getElementById('add-pub-modal');
-          const modalCloseBtn = document.querySelector('.close-btn');
-          const modalCancelBtn = document.querySelector('.btn-cancel');
-          const submitPubBtn = document.getElementById('submit-pub-btn');
-          const findLocationBtn = document.getElementById('find-location');
-          const errorMessage = document.getElementById('error-message');
-          
-          // Show modal
-          document.getElementById('add-pub-btn').addEventListener('click', function() {
-              modal.style.display = 'flex';
-              resetForm();
-              errorMessage.innerText = '';
-          });
-          
-          // Close modal with any close button
-          [modalCloseBtn, modalCancelBtn].forEach(btn => {
-              btn.addEventListener('click', function() {
-                  modal.style.display = 'none';
-              });
-          });
-          
-          // Geocode address to get coordinates
-          findLocationBtn.addEventListener('click', async function() {
-              const address = document.getElementById('pub-address').value.trim();
-              if (!address) {
-                  errorMessage.innerText = "Please enter an address";
-                  return;
-              }
-              
-              // Disable button while searching
-              this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-              this.disabled = true;
-              
-              // Perform geocoding
-              try {
-                  const success = await geocodeAddress(address);
-                  if (!success) {
-                      this.innerHTML = '<i class="fas fa-location-arrow"></i>';
-                  }
-              } catch (err) {
-                  errorMessage.innerText = "Geocoding failed: " + err.message;
-                  this.innerHTML = '<i class="fas fa-location-arrow"></i>';
-              }
-              
-              // Revert button
-              this.innerHTML = '<i class="fas fa-location-arrow"></i>';
-              this.disabled = false;
-          });
-          
-          // Submit new pub
-          submitPubBtn.addEventListener('click', async function() {
-              const name = document.getElementById('pub-name').value.trim();
-              const address = document.getElementById('pub-address').value.trim();
-              const lat = document.getElementById('pub-lat').value.trim();
-              const lon = document.getElementById('pub-lon').value.trim();
-              const beerName = document.getElementById('beer-name').value.trim();
-              const beerSize = document.getElementById('beer-size').value;
-              const beerPrice = parseFloat(document.getElementById('beer-price').value);
-              errorMessage.innerText = '';
-              
-              // Validation
-              if (!name) {
-                  errorMessage.innerText = "Pub name is required";
-                  return;
-              }
-              
-              if (!address) {
-                  errorMessage.innerText = "Address is required";
-                  return;
-              }
-              
-              if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
-                  errorMessage.innerText = "Please validate the location before submitting";
-                  return;
-              }
-              
-              if (!beerName || !beerSize || !beerPrice || isNaN(beerPrice)) {
-                  errorMessage.innerText = "Please enter valid beer details";
-                  return;
-              }
-              
-              // Create new pub object
-              const newPub = {
-                  id: pubs.length + 1,
-                  name,
-                  address,
-                  lat: parseFloat(lat),
-                  lon: parseFloat(lon),
-                  beers: [
-                      { name: beerName, size: beerSize, price: beerPrice }
-                  ]
-              };
-              
-              // Update database
-              try {
-                  await new Promise(resolve => setTimeout(resolve, 500)); // Debounce for UX
-                  await updatePubInDatabase(newPub);
-                  renderPubs();
-                  modal.style.display = 'none';
-              } catch (err) {
-                  errorMessage.innerText = `Failed to save pub: ${err.message}`;
-              }
-          });
-          
-          const submitPriceModal = document.getElementById('submit-price-modal');
-          const closeSubmitPriceBtn = document.getElementById('close-submit-price');
-          const cancelSubmitPriceBtn = document.getElementById('cancel-submit-price');
-          const submitPriceBtn = document.getElementById('submit-price-btn');
-          const existingBeersList = document.getElementById('existing-beers-list');
-          
-          let currentPubForPriceUpdate = null;
-          
-          // Delegate popup button clicks (assuming marker popups are dynamically created)
-          map.on('popupopen', function(e) {
-              const popupNode = e.popup._contentNode;
-              const submitBtn = popupNode.querySelector('.add-beer-btn');
-              if (submitBtn) {
-                  submitBtn.textContent = 'Submit New Price';
-                  submitBtn.onclick = () => {
-                      currentPubForPriceUpdate = e.popup._source.pubData;
-                      openSubmitPriceModal(currentPubForPriceUpdate);
-                  };
-              }
-          });
-          
-          // Open modal and populate beers for the selected pub
-          function openSubmitPriceModal(pub) {
-              existingBeersList.innerHTML = '';
-              if (!pub || !pub.beers) return;
-              
-              pub.beers.forEach((beer, index) => {
-                  const div = document.createElement('div');
-                  div.classList.add('form-row');
-                  div.innerHTML = `
-                    <div class="form-group" style="flex: 2;">
-                      <label>Beer Name</label>
-                      <input type="text" value="${beer.name}" readonly>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                      <label>Size</label>
-                      <input type="text" value="${beer.size}" readonly>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                      <label>Price (AUD)</label>
-                      <input type="number" min="0" step="0.01" value="${beer.price.toFixed(2)}" data-index="${index}" data-beer-name="${beer.name}" data-beer-size="${beer.size}">
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                      <button data-beer-id="${index}" class="change-btn"><i class="fas fa-edit"></i></button>
-                    </div>
-                  `;
-                  existingBeersList.appendChild(div);
-              
-                  // Add event listeners to the change buttons
-                  const changeBtn = div.querySelector('.change-btn');
-                  changeBtn.addEventListener('click', (e) => {
-                    const beerId = e.target.dataset.beerId;
-                    const beerName = e.target.closest('.form-row').querySelector('[data-beer-name]').dataset.beerName;
-                    const beerSize = e.target.closest('.form-row').querySelector('[data-beer-size]').dataset.beerSize;
-                    
-                    // Create modal for editing this beer price
-                    alert(`Change price for ${beerName} (${beerSize})`);
-                  });
-              });
-              
-              submitPriceModal.style.display = 'flex';
-          };
-          
-          // Close modal handlers
-          closeSubmitPriceBtn.onclick = () => submitPriceModal.style.display = 'none';
-          cancelSubmitPriceBtn.onclick = () => submitPriceModal.style.display = 'none';
-          
-          // Submit new prices handler
-          submitPriceBtn.onclick = async () => {
-            if (!currentPubForPriceUpdate) {
-                alert('No pub selected.');
-                return;
-            }
-            
-            // Update existing beer prices
-            const priceInputs = existingBeersList.querySelectorAll('.beer-price-input');
-            priceInputs.forEach(input => {
-                const index = parseInt(input.dataset.index);
-                const newPrice = parseFloat(input.value);
-                if (!isNaN(newPrice)) {
-                    currentPubForPriceUpdate.beers[index].price = newPrice;
-                }
-            });
-            
-            // Add new beer if specified
-            const newBeerName = document.getElementById('new-beer-name').value.trim();
-            const newBeerSize = document.getElementById('new-beer-size').value;
-            const newBeerPrice = parseFloat(document.getElementById('new-beer-price').value);
-            
-            if (newBeerName && !isNaN(newBeerPrice) && newBeerPrice > 0) {
-                currentPubForPriceUpdate.beers.push({
-                    name: newBeerName,
-                    size: newBeerSize,
-                    price: newBeerPrice
-                });
-            }
-            
-            // Update Supabase database
-            try {
-                await updatePubInDatabase(currentPubForPriceUpdate);
-                renderPubs();
-            } catch (error) {
-                console.error('Failed to update pub prices:', error);
-                alert('Failed to update pub prices. Please try again.');
-                return;
-            }
-            
-            submitPriceModal.style.display = 'none';
-          };
-          
-          // Search input handler
-          document.getElementById('pub-search').addEventListener('input', function(e) {
-              const query = e.target.value.trim().toLowerCase();
-              const resultsDiv = document.getElementById('search-results');
-              
-              if (query.length < 3) {
-                  resultsDiv.style.display = 'none';
-                  return;
-              }
-              
-              // Filter pubs by name and address
-              const results = pubs.filter(pub => 
-                  pub.name.toLowerCase().includes(query) || 
-                  pub.address.toLowerCase().includes(query)
-              );
-              
-              if (results.length > 0) {
-                  resultsDiv.innerHTML = results.slice(0, 5).map(pub => 
-                      `<div class="search-item" data-id="${pub.id}">
-                          <div style="font-weight:600">${pub.name}</div>
-                          <div style="font-size:0.9em;opacity:0.8">${pub.address}</div>
-                      </div>`
-                  ).join('');
-                  
-                  resultsDiv.style.display = 'block';
-                  
-                  // Add click handlers to search items
-                  document.querySelectorAll('.search-item').forEach(item => {
-                      item.addEventListener('click', function() {
-                          const pubId = parseInt(this.dataset.id);
-                          const pub = pubs.find(pub => pub.id === pubId);
-                          
-                          if (pub) {
-                              map.setView([pub.lat, pub.lon], 16);
-                              resultsDiv.style.display = 'none';
-                              document.getElementById('pub-search').value = '';
-                          }
-                      });
-                  });
-              } else {
-                  resultsDiv.innerHTML = '<div class="search-item">No matching pubs found</div>';
-                  resultsDiv.style.display = 'block';
-              }
-          });
-          
-          // Initialize the app
-          fetchBeerPrices();
+          alert("Location not found. Please try a different address.");
+          return false;
         } catch (error) {
-          console.error("BeerSpy initialisation error:", error);
-          document.getElementById('error-message').innerText = `App failed to initialize: ${error.message}`;
+          console.error("Geocoding error:", error);
+          alert("Error finding location. Please check your internet connection.");
+          return false;
+        }
+      }
+
+      // =====================================
+      // FETCH DATA FROM SUPABASE
+      // =====================================
+      async function fetchBeerPrices() {
+        try {
+          if (testMode) {
+            pubs = [
+              {
+                id: 1,
+                name: "The Lagerhaus",
+                address: "250 Collins St, Melbourne VIC 3000",
+                lat: -37.8140,
+                lon: 144.9643,
+                beers: [
+                  { name: "Mega Beer", size: "pint", price: 7.5 },
+                  { name: "Hoppy IPA", size: "pint", price: 9.0 },
+                  { name: "Golden Ale", size: "pint", price: 7.0 },
+                ],
+              },
+              {
+                id: 2,
+                name: "Hoppy Hop", // Fixed capitalization
+                address: "45 Bourke St, Melbourne VIC 3000",
+                lat: -37.8240,
+                lon: 144.9843,
+                beers: [
+                  { name: "IPA Special", size: "schooner", price: 5.5 },
+                  { name: "Stout", size: "pot", price: 6.5 },
+                ],
+              },
+            ];
+            renderPubs();
+            console.log("Using local test data");
+            return;
+          }
+
+          const { data, error } = await sbClient.from("beer_prices").select("*");
+
+          if (error) {
+            console.error("Error fetching beer prices from Supabase:", error.message);
+            renderPubs();
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            console.warn("No data fetched from Supabase - using local data");
+            renderPubs();
+            return;
+          }
+
+          console.log("Fetched beer prices:", data);
+          processSupabaseData(data);
+          renderPubs();
+        } catch (err) {
+          console.error("Fetch from Supabase error:", err);
+          renderPubs();
+        }
+      }
+
+      function processSupabaseData(beerPrices) {
+        const pubsMap = new Map();
+
+        beerPrices.forEach((item) => {
+          const pubKey = `${item.pub_name}-${item.lat}-${item.lon}`;
+
+          if (!pubsMap.has(pubKey)) {
+            pubsMap.set(pubKey, {
+              id: pubsMap.size + 1,
+              name: item.pub_name,
+              address: item.location || "",
+              lat: item.lat,
+              lon: item.lon,
+              beers: [],
+            });
+          }
+
+          const pub = pubsMap.get(pubKey);
+          pub.beers.push({
+            name: item.beer_name,
+            size: item.size,
+            price: item.price,
+            last_updated: item.last_updated,
+          });
+        });
+
+        pubs = Array.from(pubsMap.values());
+        console.log("Processed pubs:", pubs);
+      }
+
+      // =====================================
+      // UPDATE SUPABASE DATABASE
+      // =====================================
+      async function updatePubInDatabase(pub) {
+        console.log("Updating pub in database:", pub);
+
+        try {
+          if (testMode) {
+            console.log("Not updating Supabase - test mode enabled");
+            pubs = pubs.map((p) => (p.id === pub.id ? pub : p));
+            renderPubs();
+            document.getElementById("error-message").innerText = "";
+            return;
+          }
+
+          // Delete existing records for this pub
+          const { error: deleteError } = await sbClient
+            .from("beer_prices")
+            .delete()
+            .eq("pub_name", pub.name)
+            .eq("lat", pub.lat)
+            .eq("lon", pub.lon);
+
+          if (deleteError) {
+            console.error("Error deleting old records:", deleteError.message);
+            document.getElementById("error-message").innerText =
+              `Error deleting existing data: ${deleteError.message}`;
+            return;
+          }
+
+          // Insert new records
+          const newRecords = pub.beers.map((beer) => ({
+            pub_name: pub.name,
+            beer_name: beer.name,
+            size: beer.size,
+            price: beer.price,
+            lat: pub.lat,
+            lon: pub.lon,
+            location: pub.address,
+            last_updated: new Date().toISOString(),
+          }));
+
+          const { error: insertError } = await sbClient
+            .from("beer_prices")
+            .insert(newRecords);
+
+          if (insertError) {
+            console.error("Error inserting new records:", insertError.message);
+            document.getElementById("error-message").innerText =
+              `Error saving pub: ${insertError.message}`;
+            return;
+          }
+
+          pubs = pubs.map((p) => (p.id === pub.id ? pub : p));
+          console.log("Pub successfully updated in database");
+        } catch (err) {
+          console.error("Database update error:", err);
+          document.getElementById("error-message").innerText =
+            `Database error: ${err.message}`;
+        }
+      }
+
+      // =====================================
+      // EVENT HANDLERS & RENDERING
+      // =====================================
+      function updateStatistics() {
+        const totalPubs = pubs.length;
+        const totalBeers = pubs.reduce((total, pub) => total + pub.beers.length, 0);
+
+        const prices = [];
+        pubs.forEach((pub) => {
+          const beersForSize = pub.beers.filter((beer) => beer.size === currentSize);
+          beersForSize.forEach((beer) => prices.push(beer.price));
+        });
+
+        const avgPriceValue =
+          prices.length > 0
+            ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
+            : "N/A";
+
+        document.getElementById("pubs-count").textContent = totalPubs;
+        document.getElementById("beers-count").textContent = totalBeers;
+        document.getElementById("avg-price").textContent = `$${avgPriceValue}`;
+      }
+
+      function setupEventListeners() {
+        // Size filter buttons
+        document.querySelectorAll(".size-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            document.querySelectorAll(".size-btn").forEach((b) => b.classList.remove("active"));
+            this.classList.add("active");
+            currentSize = this.dataset.size;
+            if (pubs.length > 0) {
+              renderPubs();
+            }
+          });
+        });
+
+        // Map click overlay to allow toggling markers
+        document.getElementById("map-overlay").addEventListener("click", function () {
+          markers.forEach((marker) => {
+            if (marker && marker.getPopup && marker.getPopup().isOpen()) {
+              marker.getPopup().close();
+            }
+          });
+        });
+      }
+
+      function renderPubs() {
+        markers.forEach((marker) => map.removeLayer(marker));
+        markers = [];
+
+        pubs.forEach((pub) => {
+          const beersForSize = pub.beers.filter((beer) => beer.size === currentSize);
+          if (beersForSize.length === 0) return;
+
+          const minPrice = Math.min(...beersForSize.map((beer) => beer.price));
+          const marker = L.marker([pub.lat, pub.lon], {
+            icon: createCustomIcon(minPrice),
+          }).addTo(map);
+
+          marker.pubData = pub;
+          marker.on("click", onMarkerClick);
+          markers.push(marker);
+        });
+
+        updateStatistics();
+      }
+
+      function onMarkerClick(e) {
+        const pub = e.target.pubData;
+        const beersForSize = pub.beers.filter((beer) => beer.size === currentSize);
+
+        setTimeout(() => {
+          e.target
+            .bindPopup(createPopupContent(pub, beersForSize))
+            .openPopup();
+        }, 50);
+      }
+
+      function createPopupContent(pub, beers) {
+        let content = `
+          <div class="pub-popup">
+            <h3>${pub.name}</h3>
+            <div class="address">${pub.address}</div>
+            <table class="beer-table">
+              <tr>
+                <th>Beer</th>
+                <th>Size</th>
+                <th>Price</th>
+              </tr>
+        `;
+
+        beers.forEach((beer) => {
+          content += `
+            <tr>
+              <td>${beer.name}</td>
+              <td>${beer.size}</td>
+              <td class="beer-price">$${beer.price.toFixed(2)}</td>
+            </tr>
+          `;
+        });
+
+        // If you want to show actual last_updated from the first beer of this size:
+        const lastUpdatedDate = beers[0]?.last_updated
+          ? new Date(beers[0].last_updated).toLocaleDateString()
+          : new Date().toLocaleDateString();
+
+        content += `
+            </table>
+            <div class="last-updated">Updated: ${lastUpdatedDate}</div>
+            <div class="popup-actions">
+              <button class="add-beer-btn">Add New Beer</button>
+            </div>
+          </div>
+        `;
+        return content;
+      }
+
+      // Handle dynamic popup “Add New Beer” → “Submit New Price”
+      map.on("popupopen", function (e) {
+        // Leaflet 1.9+: use getElement() to get the popup container
+        const popupContainer = e.popup.getElement();
+        const contentNode = popupContainer.querySelector(".leaflet-popup-content");
+        const submitBtn = contentNode.querySelector(".add-beer-btn");
+        if (submitBtn) {
+          submitBtn.textContent = "Submit New Price";
+          submitBtn.onclick = () => {
+            currentPubForPriceUpdate = e.popup._source.pubData;
+            openSubmitPriceModal(currentPubForPriceUpdate);
+          };
         }
       });
-    </script>
+
+      // Modal controls for “Add Pub”
+      const modal = document.getElementById("add-pub-modal");
+      const modalCloseBtn = document.querySelector(".close-btn");
+      const modalCancelBtn = document.querySelector(".btn-cancel");
+      const submitPubBtn = document.getElementById("submit-pub-btn");
+      const findLocationBtn = document.getElementById("find-location");
+      const errorMessage = document.getElementById("error-message");
+
+      // Show “Add Pub” modal
+      document.getElementById("add-pub-btn").addEventListener("click", function () {
+        modal.style.display = "flex";
+        resetForm();
+        errorMessage.innerText = "";
+      });
+
+      // Close “Add Pub” modal
+      [modalCloseBtn, modalCancelBtn].forEach((btn) => {
+        btn.addEventListener("click", function () {
+          errorMessage.innerText = "";
+          modal.style.display = "none";
+        });
+      });
+
+      // Geocode address to get coordinates
+      findLocationBtn.addEventListener("click", async function () {
+        const btn = this;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+        errorMessage.innerText = "";
+
+        try {
+          const address = document.getElementById("pub-address").value.trim();
+          if (!address) {
+            throw new Error("Please enter an address");
+          }
+          const success = await geocodeAddress(address);
+          if (!success) {
+            throw new Error("Location not found");
+          }
+        } catch (err) {
+          errorMessage.innerText = err.message;
+        } finally {
+          btn.innerHTML = '<i class="fas fa-location-arrow"></i>';
+          btn.disabled = false;
+        }
+      });
+
+      // Submit new pub
+      submitPubBtn.addEventListener("click", async function () {
+        const name = document.getElementById("pub-name").value.trim();
+        const address = document.getElementById("pub-address").value.trim();
+        const lat = document.getElementById("pub-lat").value.trim();
+        const lon = document.getElementById("pub-lon").value.trim();
+        const beerName = document.getElementById("beer-name").value.trim();
+        const beerSize = document.getElementById("beer-size").value;
+        const beerPrice = parseFloat(document.getElementById("beer-price").value);
+        errorMessage.innerText = "";
+
+        if (!name) {
+          errorMessage.innerText = "Pub name is required";
+          return;
+        }
+        if (!address) {
+          errorMessage.innerText = "Address is required";
+          return;
+        }
+        if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+          errorMessage.innerText = "Please validate the location before submitting";
+          return;
+        }
+        if (!beerName || !beerSize || !beerPrice || isNaN(beerPrice)) {
+          errorMessage.innerText = "Please enter valid beer details";
+          return;
+        }
+
+        const newPub = {
+          id: pubs.length + 1,
+          name,
+          address,
+          lat: parseFloat(lat),
+          lon: parseFloat(lon),
+          beers: [{ name: beerName, size: beerSize, price: beerPrice }],
+        };
+
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Debounce for UX
+          await updatePubInDatabase(newPub);
+          renderPubs();
+          modal.style.display = "none";
+        } catch (err) {
+          errorMessage.innerText = `Failed to save pub: ${err.message}`;
+        }
+      });
+
+      // “Submit New Price” modal
+      const submitPriceModal = document.getElementById("submit-price-modal");
+      const closeSubmitPriceBtn = document.getElementById("close-submit-price");
+      const cancelSubmitPriceBtn = document.getElementById("cancel-submit-price");
+      const submitPriceBtn = document.getElementById("submit-price-btn");
+      const existingBeersList = document.getElementById("existing-beers-list");
+
+      let currentPubForPriceUpdate = null;
+
+      // Open “Submit New Price” modal and populate beers
+      function openSubmitPriceModal(pub) {
+        existingBeersList.innerHTML = "";
+        if (!pub || !pub.beers) return;
+
+        pub.beers.forEach((beer, index) => {
+          const div = document.createElement("div");
+          div.classList.add("form-row");
+          div.innerHTML = `
+            <div class="form-group" style="flex: 2;">
+              <label>Beer Name</label>
+              <input type="text" value="${beer.name}" readonly>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Size</label>
+              <input type="text" value="${beer.size}" readonly>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Price (AUD)</label>
+              <input
+                type="number"
+                class="beer-price-input"
+                min="0"
+                step="0.01"
+                value="${beer.price.toFixed(2)}"
+                data-index="${index}"
+                data-beer-name="${beer.name}"
+                data-beer-size="${beer.size}"
+              >
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <button data-beer-id="${index}" class="change-btn">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+          `;
+          existingBeersList.appendChild(div);
+
+          const changeBtn = div.querySelector(".change-btn");
+          changeBtn.addEventListener("click", () => {
+            alert(`Change price for ${beer.name} (${beer.size})`);
+          });
+        });
+
+        submitPriceModal.style.display = "flex";
+      }
+
+      // Close “Submit New Price” modal
+      closeSubmitPriceBtn.onclick = () => {
+        submitPriceModal.style.display = "none";
+      };
+      cancelSubmitPriceBtn.onclick = () => {
+        submitPriceModal.style.display = "none";
+      };
+
+      // Submit new prices handler
+      submitPriceBtn.onclick = async () => {
+        if (!currentPubForPriceUpdate) {
+          alert("No pub selected.");
+          return;
+        }
+
+        // Update existing beer prices
+        const priceInputs = existingBeersList.querySelectorAll(".beer-price-input");
+        priceInputs.forEach((input) => {
+          const index = parseInt(input.dataset.index);
+          const newPrice = parseFloat(input.value);
+          if (!isNaN(newPrice)) {
+            currentPubForPriceUpdate.beers[index].price = newPrice;
+          }
+        });
+
+        // Add new beer if specified
+        const newBeerName = document.getElementById("new-beer-name").value.trim();
+        const newBeerSize = document.getElementById("new-beer-size").value;
+        const newBeerPrice = parseFloat(document.getElementById("new-beer-price").value);
+
+        if (newBeerName && !isNaN(newBeerPrice) && newBeerPrice > 0) {
+          currentPubForPriceUpdate.beers.push({
+            name: newBeerName,
+            size: newBeerSize,
+            price: newBeerPrice,
+          });
+        }
+
+        try {
+          await updatePubInDatabase(currentPubForPriceUpdate);
+          renderPubs();
+        } catch (error) {
+          console.error("Failed to update pub prices:", error);
+          alert("Failed to update pub prices. Please try again.");
+          return;
+        }
+
+        submitPriceModal.style.display = "none";
+      };
+
+      // Search input handler
+      document.getElementById("pub-search").addEventListener("input", function (e) {
+        const query = e.target.value.trim().toLowerCase();
+        const resultsDiv = document.getElementById("search-results");
+
+        if (query.length < 3) {
+          resultsDiv.style.display = "none";
+          return;
+        }
+
+        const results = pubs.filter(
+          (pub) =>
+            pub.name.toLowerCase().includes(query) ||
+            pub.address.toLowerCase().includes(query)
+        );
+
+        if (results.length > 0) {
+          resultsDiv.innerHTML = results
+            .slice(0, 5)
+            .map(
+              (pub) => `
+            <div class="search-item" data-id="${pub.id}">
+              <div style="font-weight:600">${pub.name}</div>
+              <div style="font-size:0.9em;opacity:0.8">${pub.address}</div>
+            </div>`
+            )
+            .join("");
+          resultsDiv.style.display = "block";
+
+          document.querySelectorAll(".search-item").forEach((item) => {
+            item.addEventListener("click", function () {
+              const pubId = parseInt(this.dataset.id);
+              const pub = pubs.find((pub) => pub.id === pubId);
+              if (pub) {
+                map.setView([pub.lat, pub.lon], 16);
+                resultsDiv.style.display = "none";
+                document.getElementById("pub-search").value = "";
+              }
+            });
+          });
+        } else {
+          resultsDiv.innerHTML = '<div class="search-item">No matching pubs found</div>';
+          resultsDiv.style.display = "block";
+        }
+      });
+    } catch (error) {
+      console.error("BeerSpy initialization error:", error);
+      document.getElementById("error-message").innerText =
+        `App failed to initialize: ${error.message}`;
+    }
+  });
+</script>
+
 </body>
 </html>
