@@ -94,6 +94,7 @@
         #main-container {
             flex: 1;
             display: flex;
+            flex-direction: column;
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
@@ -105,7 +106,8 @@
         #map-container {
             flex: 1;
             position: relative;
-            height: calc(100vh - 160px);
+            height: 70vh;
+            min-height: 400px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             border-radius: 8px;
             overflow: hidden;
@@ -118,7 +120,7 @@
         
         /* ======== Controls Section ======== */
         #map-controls {
-            width: 300px;
+            width: 100%;
             background: white;
             border-radius: 8px;
             padding: 20px;
@@ -139,10 +141,10 @@
             border-bottom: 1px solid var(--medium-gray);
         }
         
-        /* Beer Size Filter */
+        /* Beer Size Filter - Updated for more options */
         .size-filter {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 8px;
         }
         
@@ -184,19 +186,6 @@
             background: var(--accent-dark);
         }
         
-        /* Search box */
-        .search-box {
-            margin-top: 15px;
-        }
-        
-        .search-box input {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        
         /* Statistics display */
         .stats-container {
             display: flex;
@@ -225,38 +214,38 @@
         
         /* ======== Search Bar ======== */
         .search-container {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    z-index: 1000;
-    width: 300px;
-}
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            z-index: 1000;
+            width: 300px;
+        }
 
-.search-bar {
-    display: flex;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.2);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-}
+        .search-bar {
+            display: flex;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
 
-.search-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    max-height: 300px;
-    overflow-y: auto;
-    background: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    border-radius: 0 0 4px 4px;
-    z-index: 1001;
-    display: none;
-}
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border-radius: 0 0 4px 4px;
+            z-index: 1001;
+            display: none;
+        }
 
-.search-results.show {
-    display: block !important;
-}
+        .search-results.show {
+            display: block !important;
+        }
         
         .search-bar input {
             flex-grow: 1;
@@ -278,16 +267,47 @@
             background: var(--secondary-dark);
         }
 
-
-
         .search-item {
-            padding: 10px 15px;
+            padding: 12px 15px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
+            transition: background 0.2s;
         }
-        
+
         .search-item:hover {
             background: #f1f5f9;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item .place-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 2px;
+        }
+
+        .search-item .place-address {
+            font-size: 0.9em;
+            color: var(--text-medium);
+        }
+
+        .search-item .place-type {
+            font-size: 0.8em;
+            color: var(--secondary);
+            margin-top: 2px;
+            font-style: italic;
+        }
+
+        .existing-pub-indicator {
+            background: #e8f5e8;
+            border-left: 3px solid #27ae60;
+        }
+
+        .new-location-indicator {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
         }
         
         /* ======== Marker Styles ======== */
@@ -304,7 +324,7 @@
             min-width: 60px;
         }
 
-                .address-search-container {
+        .address-search-container {
             position: relative;
         }
 
@@ -556,68 +576,6 @@
             background: var(--accent-dark);
         }
         
-
-        .search-item {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .search-item:hover {
-            background: #f1f5f9;
-        }
-
-        .search-item:last-child {
-            border-bottom: none;
-        }
-
-        .search-item .place-name {
-            font-weight: 600;
-            color: var(--text-dark);
-            margin-bottom: 2px;
-        }
-
-        .search-item .place-address {
-            font-size: 0.9em;
-            color: var(--text-medium);
-        }
-
-        .search-item .place-type {
-            font-size: 0.8em;
-            color: var(--secondary);
-            margin-top: 2px;
-            font-style: italic;
-        }
-
-        .existing-pub-indicator {
-            background: #e8f5e8;
-            border-left: 3px solid #27ae60;
-        }
-
-        .new-location-indicator {
-            background: #fff3cd;
-            border-left: 3px solid #ffc107;
-        }
-        .search-geocode {
-            margin-top: 5px;
-            display: flex;
-        }
-        
-        .search-geocode .form-group {
-            flex: 1;
-            margin-right: 10px;
-        }
-        
-        .search-geocode button {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            padding: 0 15px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
         /* Footer */
         footer {
             background: var(--primary);
@@ -636,7 +594,6 @@
             margin: 10px 0;
         }
 
-        
         /* Custom marker arrow */
         .marker-arrow {
             position: absolute;
@@ -666,25 +623,59 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Statistics header */
-        #stats-header {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: flex;
-            gap: 15px;
+        /* Desktop layout */
+        @media (min-width: 768px) {
+            #main-container {
+                flex-direction: row;
+            }
+            
+            #map-container {
+                height: calc(100vh - 160px);
+            }
+            
+            #map-controls {
+                width: 300px;
+                order: 2;
+            }
         }
-    
+
+        /* Mobile optimizations */
+        @media (max-width: 767px) {
+            #main-container {
+                padding: 10px;
+            }
+            
+            .search-container {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                width: auto;
+            }
+            
+            .size-filter {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .stat-card {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px;
+            }
+            
+            .stat-card .value {
+                font-size: 1.1rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Statistics header -->
-  
-    
     <!-- Header Section -->
     <header>
         <div class="container">
@@ -703,26 +694,29 @@
         <div id="map-container">
             <div id="map"></div>
             
-          <!-- Update the search container in your HTML -->
-          <div class="search-container">
-    <div class="search-bar">
-        <input type="text" id="pub-search" placeholder="Search places in Melbourne...">
-        <button class="search-btn"><i class="fas fa-search"></i></button>
-    </div>
-    <!-- Move this div outside of search-bar -->
-    <div class="search-results" id="search-results">
-        <!-- Live search results will appear here -->
-    </div>
-</div>
+            <!-- Search container -->
+            <div class="search-container">
+                <div class="search-bar">
+                    <input type="text" id="pub-search" placeholder="Search places in Melbourne...">
+                    <button class="search-btn"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="search-results" id="search-results">
+                    <!-- Live search results will appear here -->
+                </div>
+            </div>
+        </div>
         
         <!-- Map Controls Panel -->
         <div id="map-controls">
             <div class="control-section">
                 <h3>Beer Size</h3>
                 <div class="size-filter">
-                    <button class="size-btn active" data-size="pint">Pint (568ml)</button>
-                    <button class="size-btn" data-size="schooner">Schooner (425ml)</button>
-                    <button class="size-btn" data-size="pot">Pot (285ml)</button>
+                    <button class="size-btn active" data-size="pint">Pint</button>
+                    <button class="size-btn" data-size="schooner">Schooner</button>
+                    <button class="size-btn" data-size="pot">Pot</button>
+                    <button class="size-btn" data-size="bottle">Bottle</button>
+                    <button class="size-btn" data-size="can">Can</button>
+                    <button class="size-btn" data-size="jug">Jug</button>
                 </div>
             </div>
             
@@ -732,7 +726,6 @@
                     <i class="fas fa-plus"></i> Enter Pub Details
                 </button>
             </div>
-            
             
             <div class="control-section stats-container">
                 <div class="stat-card">
@@ -773,6 +766,7 @@
                             <option value="pint">Pint</option>
                             <option value="schooner">Schooner</option>
                             <option value="pot">Pot</option>
+                            <option value="bottle">Bottle</option>
                             <option value="can">Can</option>
                             <option value="jug">Jug</option>
                         </select>
@@ -804,13 +798,13 @@
                     <input type="text" id="pub-name" required placeholder="Enter pub name">
                 </div>
                 
-            <div class="form-group">
-                <label for="pub-address">Address *</label>
-                <div class="address-search-container">
-                    <input type="text" id="pub-address" required placeholder="Start typing an address...">
-                    <div class="address-results" id="address-results"></div>
+                <div class="form-group">
+                    <label for="pub-address">Address *</label>
+                    <div class="address-search-container">
+                        <input type="text" id="pub-address" required placeholder="Start typing an address...">
+                        <div class="address-results" id="address-results"></div>
+                    </div>
                 </div>
-            </div>
                 
                 <div class="form-row">
                     <div class="form-group">
@@ -839,6 +833,7 @@
                             <option value="pot">Pot (285ml)</option>
                             <option value="bottle">Bottle</option>
                             <option value="can">Can</option>
+                            <option value="jug">Jug</option>
                         </select>
                     </div>
                 </div>
@@ -857,11 +852,10 @@
     
     <!-- Footer -->
     <footer>
-        <p>BeerSpy alpha v0.0.13&copy; 2025</p>
+        <p>BeerSpy alpha v0.0.27&copy; 2025</p>
     </footer>
 
-     
-
+    <!-- Your existing JavaScript goes here -->
 
 
 <script type="module">
