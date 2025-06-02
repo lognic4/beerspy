@@ -731,6 +731,10 @@
         font-size: 0.8rem;
     }
 }
+.price-bubble.unavailable {
+    background: #95a5a6 !important;
+    color: white;
+}
     </style>
 </head>
 <body>
@@ -1317,7 +1321,10 @@
             },
 
             createCustomIcon(price, ageClass, isCurrentlyHappyHour = false) {
+
                 const happyHourClass = isCurrentlyHappyHour ? ' happy-hour' : '';
+                const unavailableClass = showUnavailable ? ' unavailable ' : '';
+                const displayPrice = showUnavailable ? ' -- ' : utils.formatPrice(price);
                 
                 return L.divIcon({
                     className: "custom-marker",
@@ -1365,7 +1372,7 @@
                         .filter(item => this.checkIfCurrentlyHappyHour(item.beer))
                         .map(item => item.beer);
 
-                    let displayBeer, displayPrice, isCurrentlyHappyHour;
+                    let displayBeer, displayPrice, isCurrentlyHappyHour, showUnavailable = false;
 
                     if (activeHappyHourBeers.length > 0) {
                         // Use cheapest active happy hour price
@@ -1384,23 +1391,24 @@
                             displayPrice = displayBeer.price;
                             isCurrentlyHappyHour = false;
                         } else {
-                            // Fallback to any beer if no regular prices exist
+                            // NO REGULAR PRICES AND NO ACTIVE HAPPY HOUR - Show "--"
+                            showUnavailable = true;
+                            displayPrice = "--";
+                            isCurrentlyHappyHour = false;
+                            
+                            // Use any beer for age calculation (just for the marker age color)
                             const allBeers = Array.from(happyHourBeerMap.values()).map(item => item.beer);
                             if (allBeers.length === 0) return; // Skip this pub if no beers
-                            displayBeer = allBeers.reduce((cheapest, beer) => 
-                                beer.price < cheapest.price ? beer : cheapest
-                            );
-                            displayPrice = displayBeer.price;
-                            isCurrentlyHappyHour = false;
+                            displayBeer = allBeers[0]; // Just for age calculation
                         }
                     }
                     
-                    // Determine age class based on the beer being displayed
+                    // Determine age class based on the beer being displayed (or any beer if showing "--")
                     const ageInDays = Utils.getDaysDifference(displayBeer.last_updated);
                     let ageClass = ageInDays <= 7 ? 'recent' : ageInDays <= 30 ? 'average' : 'old';
 
                     const marker = L.marker([pub.lat, pub.lon], {
-                        icon: this.createCustomIcon(displayPrice, ageClass, isCurrentlyHappyHour),
+                        icon: this.createCustomIcon(displayPrice, ageClass, isCurrentlyHappyHour, showUnavailable),
                     }).addTo(appState.map);
 
                     marker.pubData = pub;
