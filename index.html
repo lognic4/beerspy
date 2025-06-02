@@ -1320,15 +1320,15 @@
                 });
             },
 
-            createCustomIcon(price, ageClass, isCurrentlyHappyHour = false) {
+            createCustomIcon(price, ageClass, isCurrentlyHappyHour = false, showUnavailable = false) {
 
                 const happyHourClass = isCurrentlyHappyHour ? ' happy-hour' : '';
                 const unavailableClass = showUnavailable ? ' unavailable ' : '';
-                const displayPrice = showUnavailable ? ' -- ' : utils.formatPrice(price);
+                const displayPrice = showUnavailable ? ' -- ' : Utils.formatPrice(price);
                 
                 return L.divIcon({
                     className: "custom-marker",
-                    html: `<div class="price-bubble ${ageClass}${happyHourClass}">${Utils.formatPrice(price)}</div>`,
+                    html: `<div class="price-bubble ${ageClass}${happyHourClass}${unavailableClass}">${displayPrice}</div>`,
                     iconSize: [60, 30],
                     iconAnchor: [30, 30],
                 });
