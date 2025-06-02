@@ -1265,16 +1265,21 @@
         setupSubmitPriceModal();
       }
 
-      function renderPubs() {
+        function renderPubs() {
         // Clear existing markers
         markers.forEach((marker) => {
-          if (map.hasLayer(marker)) {
+            if (map.hasLayer(marker)) {
             map.removeLayer(marker);
-          }
+            }
         });
         markers = [];
 
-        const beerMap = new Map();
+        pubs.forEach((pub) => {
+            const beersForSize = pub.beers.filter((beer) => beer.size === currentSize);
+            if (beersForSize.length === 0) return;
+
+            // Get the most recent price for each unique beer name
+            const beerMap = new Map();
             beersForSize.forEach(beer => {
             const existingBeer = beerMap.get(beer.name);
             const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
@@ -1295,9 +1300,13 @@
             icon: createCustomIcon(minRecentPrice),
             }).addTo(map);
 
+            marker.pubData = pub;
+            marker.on("click", onMarkerClick);
+            markers.push(marker);
+        });
 
         updateStatistics();
-      }
+        }
 
       function onMarkerClick(e) {
         const pub = e.target.pubData;
