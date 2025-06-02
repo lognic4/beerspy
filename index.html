@@ -1233,7 +1233,11 @@
             // Debounce the search
             searchTimeout = setTimeout(async () => {
             try {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Melbourne, Australia")}&limit=5&addressdetails=1`;
+                // Try both specific and broader searches
+                const urls = [
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Melbourne, Australia")}&limit=3&addressdetails=1&extratags=1`,
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Victoria, Australia")}&limit=2&addressdetails=1&extratags=1`
+                ];
                 const response = await fetch(url);
                 const data = await response.json();
                 
