@@ -276,7 +276,7 @@
         .search-results.show {
             display: block !important;
             background: white !important;
-            z-index: 1001 !important;
+            opacity: 1 !important;
         }
 
 
@@ -1480,9 +1480,6 @@ if (searchInput && resultsDiv) {
           console.log("📱 Results HTML:", resultsHTML); // ADD THIS LINE
   console.log("📱 Results div display:", resultsDiv.style.display); // ADD THIS LINE
         resultsDiv.classList.add('show');
-        resultsDiv.style.backgroundColor = "white"; // Force visibility
-        resultsDiv.style.border = "2px solid red"; // Temporary debug border
-        resultsDiv.style.zIndex = "9999"; // Force to top
           
           // Add click handlers
           resultsDiv.querySelectorAll('.search-item').forEach(item => {
