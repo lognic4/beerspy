@@ -2168,6 +2168,39 @@
                 this.setupSubmitPriceModal();
             },
 
+                validateBeerPrice(category, size, price) {
+                    const priceRanges = {
+                        pint: { min: 4, max: 18, typical: [7, 12] },
+                        schooner: { min: 3, max: 15, typical: [6, 10] },
+                        pot: { min: 2, max: 12, typical: [4, 8] },
+                        bottle: { min: 3, max: 15, typical: [5, 11] },
+                        can: { min: 3, max: 12, typical: [4, 9] },
+                        jug: { min: 8, max: 35, typical: [15, 25] }
+                    };
+
+                    const range = priceRanges[size];
+                    if (!range) return { valid: true }; // Unknown size, allow it
+
+                    // Hard limits - definitely wrong
+                    if (price < range.min || price > range.max) {
+                        return { 
+                            valid: false, 
+                            message: `${size} prices typically range from $${range.min}-$${range.max}. Please double-check.` 
+                        };
+                    }
+
+                    // Soft warnings - unusual but possible
+                    if (price < range.typical[0] || price > range.typical[1]) {
+                        return { 
+                            valid: true, 
+                            warning: true,
+                            message: `That's ${price < range.typical[0] ? 'quite cheap' : 'quite expensive'} for a ${size}. Is this correct?` 
+                        };
+                    }
+
+                    return { valid: true };
+                },
+
             setupAddPubModal() {
                 const modal = document.getElementById("add-pub-modal");
                 const addPubBtn = document.getElementById("add-pub-btn");
@@ -2403,7 +2436,18 @@
                         happy_hour_days: isHappyHour ? happyHourDays : null
                     }]
                 };
+                const priceValidation = this.validateBeerPrice(values.category, values.size, values.price);
+                
+                if (!priceValidation.valid) {
+                    Utils.showError(priceValidation.message);
+                    return;
+                }
 
+                if (priceValidation.warning) {
+                    // Show warning but allow user to proceed
+                    const proceed = confirm(`⚠️ ${priceValidation.message}\n\nClick OK to submit anyway, or Cancel to edit.`);
+                    if (!proceed) return;
+                }
                 try {
                     await DataManager.updatePubInDatabase(newPub);
                     document.getElementById("add-pub-modal").style.display = "none";
@@ -2517,6 +2561,17 @@
                     happy_hour_end: isHappyHour ? happyHourEnd : null,
                     happy_hour_days: isHappyHour ? happyHourDays : null
                 };
+                const priceValidation = this.validateBeerPrice(selectedCategory, selectedSize, selectedPrice);
+        
+                    if (!priceValidation.valid) {
+                        alert(priceValidation.message);
+                        return;
+                    }
+
+                    if (priceValidation.warning) {
+                        const proceed = confirm(`⚠️ ${priceValidation.message}\n\nClick OK to submit anyway, or Cancel to edit.`);
+                        if (!proceed) return;
+                    }
 
                 try {
                         // Use the new method instead of updating the entire pub
