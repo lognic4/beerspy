@@ -880,6 +880,34 @@
         font-size: 1rem;
     }
 }
+
+.price-input-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.happy-hour-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: normal;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.happy-hour-checkbox input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+@media (max-width: 767px) {
+    .price-input-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
     </style>
 </head>
 <body>
@@ -936,12 +964,7 @@
                     <!-- Dynamic list goes here -->
                 </div>
             </div>
-            <div class="control-section">
-                <h3>Add a New Pub</h3>
-                <button id="add-pub-btn">
-                    <i class="fas fa-plus"></i> Enter Pub Details
-                </button>
-            </div>
+
             <div class="control-section">
                 <h3>Price Bubble Legend</h3>
                 <div class="legend-container">
@@ -966,6 +989,13 @@
                         <span>No Current Prices</span>
                     </div>
                 </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Add a New Pub</h3>
+                <button id="add-pub-btn">
+                    <i class="fas fa-plus"></i> Enter Pub Details
+                </button>
             </div>
             
             <div class="control-section stats-container">
@@ -1041,7 +1071,13 @@
                 
                 <div class="form-group">
                     <label for="beer-price">Price (AUD) *</label>
-                    <input type="number" id="beer-price" min="0" step="0.01" required placeholder="0.00">
+                        <div class="price-input-container">
+                            <input type="number" id="beer-price" min="0" step="0.01" required placeholder="0.00" style="width: 120px;">
+                            <label class="happy-hour-checkbox">
+                                <input type="checkbox" id="is-happy-hour"> Happy Hour Price?
+                            </label>
+                        </div>
+
                 </div>
                 
                 <div class="form-group">
