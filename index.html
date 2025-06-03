@@ -2627,7 +2627,7 @@
             }
         };
 
-        // Add this new PubListManager object
+        //PUB LIST MANAGER//
         const PubListManager = {
             init() {
                 // Set initial mode
@@ -2690,7 +2690,7 @@
 
                     // Calculate value score using the cheapest available price
                     const distanceWeight = Math.max(0.1, distance * 0.5);
-                    const valueScore = cheapestPrice * distanceWeight;
+                    const valueScore = cheapestPrice * 0.5 * distanceWeight;
 
                     return {
                         pub,
