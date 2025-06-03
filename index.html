@@ -110,8 +110,10 @@
         }
         
         #map {
-            height: 100%;
             background: var(--light-gray);
+                height: 100% !important;
+                width: 100% !important;
+            min-height: 400px;
         }
         
         /* ======== User Location Marker ======== */
@@ -1508,6 +1510,22 @@
                 }
 
                 appState.map = L.map("map").setView([mapCenter.lat, mapCenter.lon], zoom);
+                setTimeout(() => {
+                    if (appState.map) {
+                        appState.map.invalidateSize();
+                    }
+                }, 100);
+                window.addEventListener('resize', () => {
+                    if (appState.map) {
+                        setTimeout(() => appState.map.invalidateSize(), 100);
+                    }
+                });
+
+                window.addEventListener('orientationchange', () => {
+                    if (appState.map) {
+                        setTimeout(() => appState.map.invalidateSize(), 300);
+                    }
+                });
 
                 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
                     attribution: "&copy; OpenStreetMap contributors",
