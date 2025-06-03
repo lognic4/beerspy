@@ -1763,6 +1763,9 @@
                     console.log("Fetched beer prices:", data);
                     this.processSupabaseData(data);
                     MapManager.renderMarkers();
+                        if (typeof PubListManager !== 'undefined') {
+                            PubListManager.updatePubList();
+                        }
                 } catch (err) {
                     console.error("Fetch from Supabase error:", err);
                     MapManager.renderMarkers();
@@ -2798,9 +2801,9 @@
                 SearchManager.init();
                 
                 // Fetch and display data
+                PubListManager.init();
                 await DataManager.fetchBeerPrices();
 
-                PubListManager.updatePubList();
                 
                 console.log("BeerSpy application initialized successfully!");
                 
