@@ -133,6 +133,8 @@
         }
         
         /* ======== Controls Panel ======== */
+
+        
         #map-controls {
             width: 100%;
             background: white;
@@ -800,6 +802,84 @@
         height: 18px;
     }
 }
+
+.pub-list-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.pub-info h4 { font-size: 0.95rem; margin-bottom: 4px; }
+.pub-info .distance { font-size: 0.8rem; color: #666; }
+.pub-price { 
+    font-size: 1.1rem; 
+    font-weight: bold; 
+    color: var(--primary);
+}
+.value-score {
+    font-size: 0.75rem;
+    color: var(--success);
+}
+
+.value-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    color: var(--text-dark);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.toggle-btn:hover, 
+.toggle-btn.active {
+    background: var(--secondary);
+    color: white;
+    border-color: var(--secondary);
+}
+
+.pub-list {
+    border-radius: 4px;
+    border: 1px solid #eee;
+    background: white;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.pub-list-item:hover {
+    background: #f8f9fa;
+}
+
+.pub-list-item:last-child {
+    border-bottom: none;
+}
+
+/* Mobile optimization for the list */
+@media (max-width: 767px) {
+    .pub-list {
+        max-height: 200px;
+    }
+    
+    .pub-info h4 {
+        font-size: 0.9rem;
+    }
+    
+    .pub-price {
+        font-size: 1rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -845,7 +925,17 @@
                     <button class="size-btn" data-size="jug">Jug</button>
                 </div>
             </div>
-            
+            <!-- Add to controls panel -->
+            <div class="control-section">
+                <h3>Best Value Near You</h3>
+                <div class="value-toggle">
+                    <button class="toggle-btn active" data-mode="value">Best Value</button>
+                    <button class="toggle-btn" data-mode="distance">Closest</button>
+                </div>
+                <div id="pub-list" class="pub-list">
+                    <!-- Dynamic list goes here -->
+                </div>
+            </div>
             <div class="control-section">
                 <h3>Add a New Pub</h3>
                 <button id="add-pub-btn">
@@ -1198,6 +1288,33 @@
                 }
                 console.error(message);
             },
+            // Add to Utils object
+            calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Earth's radius in km lol
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                        Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c; // Distance in km
+            },
+
+            calculatePubScore(pub, userLocation, currentSize) {
+                const beers = pub.beers.filter(b => b.size === currentSize);
+                if (!beers.length) return null;
+                
+                const cheapestPrice = Math.min(...beers.map(b => b.price));
+                const distance = this.calculateDistance(
+                    userLocation.lat, userLocation.lon, 
+                    pub.lat, pub.lon
+                );
+                
+                // Weighted score: prioritize price but penalize distance
+                // Lower score = better value
+                const distanceWeight = Math.max(0.1, distance * 0.5); // Min 0.1km penalty
+                return cheapestPrice * distanceWeight;
+            },
 
             hideError(elementId = 'error-message') {
                 const errorElement = document.getElementById(elementId);
@@ -1507,6 +1624,9 @@
                 });
 
                 Statistics.update();
+                if (typeof PubListManager !== 'undefined') {
+                    pubListManager.updatePubList();
+                }
             },
 
             onMarkerClick(e) {
@@ -2476,9 +2596,10 @@
         // =====================================
         // EVENT LISTENERS
         // =====================================
+
         const EventListeners = {
             init() {
-                // Size filter buttons
+                // Size filter buttons (existing code)
                 document.querySelectorAll(".size-btn").forEach((btn) => {
                     btn.addEventListener("click", () => {
                         document.querySelectorAll(".size-btn").forEach((b) => b.classList.remove("active"));
@@ -2486,9 +2607,169 @@
                         appState.currentSize = btn.dataset.size;
                         if (appState.pubs.length > 0) {
                             MapManager.renderMarkers();
+                            PubListManager.updatePubList(); // Add this line
                         }
                     });
                 });
+
+                // Add toggle buttons for Best Value/Closest
+                document.querySelectorAll(".toggle-btn").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        document.querySelectorAll(".toggle-btn").forEach((b) => b.classList.remove("active"));
+                        btn.classList.add("active");
+                        appState.currentListMode = btn.dataset.mode;
+                        PubListManager.updatePubList();
+                    });
+                });
+            }
+        };
+
+        // Add this new PubListManager object
+        const PubListManager = {
+            init() {
+                // Set initial mode
+                appState.currentListMode = "value";
+                this.updatePubList();
+            },
+
+            updatePubList() {
+                if (!appState.userLocation || !appState.pubs.length) {
+                    this.renderEmptyList();
+                    return;
+                }
+
+                const pubsWithScores = this.calculatePubScores();
+                const sortedPubs = this.sortPubs(pubsWithScores);
+                this.renderPubList(sortedPubs.slice(0, 5)); // Show top 5
+            },
+
+            calculatePubScores() {
+                return appState.pubs.map(pub => {
+                    const beersForSize = pub.beers.filter(beer => beer.size === appState.currentSize);
+                    
+                    if (beersForSize.length === 0) {
+                        return null; // No beers of this size
+                    }
+
+                    const distance = Utils.calculateDistance(
+                        appState.userLocation.lat, 
+                        appState.userLocation.lon, 
+                        pub.lat, 
+                        pub.lon
+                    );
+
+                    // Get cheapest price (including happy hour if active)
+                    let cheapestPrice = null;
+                    let isHappyHourPrice = false;
+
+                    beersForSize.forEach(beer => {
+                        const isCurrentlyHappyHour = beer.is_happy_hour && 
+                            MapManager.checkIfCurrentlyHappyHour(beer);
+                        
+                        if (cheapestPrice === null || beer.price < cheapestPrice) {
+                            cheapestPrice = beer.price;
+                            isHappyHourPrice = isCurrentlyHappyHour;
+                        }
+                    });
+
+                    if (cheapestPrice === null) return null;
+
+                    const valueScore = Utils.calculatePubScore(pub, appState.userLocation, appState.currentSize);
+
+                    return {
+                        pub,
+                        distance,
+                        cheapestPrice,
+                        isHappyHourPrice,
+                        valueScore
+                    };
+                }).filter(item => item !== null);
+            },
+
+            sortPubs(pubsWithScores) {
+                if (appState.currentListMode === "distance") {
+                    return pubsWithScores.sort((a, b) => a.distance - b.distance);
+                } else {
+                    // Sort by value score (lower is better)
+                    return pubsWithScores.sort((a, b) => a.valueScore - b.valueScore);
+                }
+            },
+
+            renderPubList(sortedPubs) {
+                const pubListElement = document.getElementById("pub-list");
+                if (!pubListElement) return;
+
+                if (sortedPubs.length === 0) {
+                    this.renderEmptyList();
+                    return;
+                }
+
+                const listHTML = sortedPubs.map((item, index) => {
+                    const { pub, distance, cheapestPrice, isHappyHourPrice, valueScore } = item;
+                    
+                    const distanceText = `${distance.toFixed(1)}km away`;
+                    const priceText = Utils.formatPrice(cheapestPrice);
+                    const happyHourIndicator = isHappyHourPrice ? ' 🎉' : '';
+                    
+                    let valueText = '';
+                    if (appState.currentListMode === "value") {
+                        const rank = index + 1;
+                        valueText = `<div class="value-score">#${rank} Best Value</div>`;
+                    }
+
+                    return `
+                        <div class="pub-list-item" data-lat="${pub.lat}" data-lon="${pub.lon}">
+                            <div class="pub-info">
+                                <h4>${pub.name}${happyHourIndicator}</h4>
+                                <div class="distance">${distanceText}</div>
+                                ${valueText}
+                            </div>
+                            <div class="pub-price">${priceText}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                pubListElement.innerHTML = listHTML;
+
+                // Add click handlers
+                pubListElement.querySelectorAll('.pub-list-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const lat = parseFloat(item.dataset.lat);
+                        const lon = parseFloat(item.dataset.lon);
+                        
+                        // Navigate to pub on map
+                        appState.map.setView([lat, lon], 16);
+                        
+                        // Find and click the marker
+                        const marker = appState.markers.find(m => 
+                            Math.abs(m.getLatLng().lat - lat) < 0.0001 && 
+                            Math.abs(m.getLatLng().lng - lon) < 0.0001
+                        );
+                        if (marker) {
+                            setTimeout(() => marker.fire('click'), 200);
+                        }
+                    });
+                });
+            },
+
+            renderEmptyList() {
+                const pubListElement = document.getElementById("pub-list");
+                if (!pubListElement) return;
+
+                let message = "No pubs found";
+                if (!appState.userLocation) {
+                    message = "Location needed for recommendations";
+                } else if (appState.pubs.length === 0) {
+                    message = "No pubs in database yet";
+                } else {
+                    message = `No ${appState.currentSize}s available nearby`;
+                }
+
+                pubListElement.innerHTML = `
+                    <div class="pub-list-item" style="justify-content: center; color: var(--text-medium);">
+                        ${message}
+                    </div>
+                `;
             }
         };
 
@@ -2518,6 +2799,8 @@
                 
                 // Fetch and display data
                 await DataManager.fetchBeerPrices();
+
+                PubListManager.updatePubList();
                 
                 console.log("BeerSpy application initialized successfully!");
                 
