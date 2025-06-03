@@ -1625,7 +1625,7 @@
 
                 Statistics.update();
                 if (typeof PubListManager !== 'undefined') {
-                    pubListManager.updatePubList();
+                    PubListManager.updatePubList();
                 }
             },
 
@@ -2632,7 +2632,6 @@
             init() {
                 // Set initial mode
                 appState.currentListMode = "value";
-                this.updatePubList();
             },
 
             updatePubList() {
@@ -2661,23 +2660,37 @@
                         pub.lon
                     );
 
-                    // Get cheapest price (including happy hour if active)
+                    // Separate regular and currently active happy hour beers (SAME LOGIC AS MAP MARKERS)
+                    const regularBeers = [];
+                    const activeHappyHourBeers = [];
+
+                    beersForSize.forEach(beer => {
+                        if (beer.is_happy_hour && MapManager.checkIfCurrentlyHappyHour(beer)) {
+                            activeHappyHourBeers.push(beer);
+                        } else if (!beer.is_happy_hour) {
+                            regularBeers.push(beer);
+                        }
+                        // Skip inactive happy hour beers completely
+                    });
+
+                    // Determine cheapest available price and its type
                     let cheapestPrice = null;
                     let isHappyHourPrice = false;
 
-                    beersForSize.forEach(beer => {
-                        const isCurrentlyHappyHour = beer.is_happy_hour && 
-                            MapManager.checkIfCurrentlyHappyHour(beer);
-                        
-                        if (cheapestPrice === null || beer.price < cheapestPrice) {
-                            cheapestPrice = beer.price;
-                            isHappyHourPrice = isCurrentlyHappyHour;
-                        }
-                    });
+                    // Prioritize active happy hour prices
+                    if (activeHappyHourBeers.length > 0) {
+                        cheapestPrice = Math.min(...activeHappyHourBeers.map(b => b.price));
+                        isHappyHourPrice = true;
+                    } else if (regularBeers.length > 0) {
+                        cheapestPrice = Math.min(...regularBeers.map(b => b.price));
+                        isHappyHourPrice = false;
+                    }
 
-                    if (cheapestPrice === null) return null;
+                    if (cheapestPrice === null) return null; // No available prices
 
-                    const valueScore = Utils.calculatePubScore(pub, appState.userLocation, appState.currentSize);
+                    // Calculate value score using the cheapest available price
+                    const distanceWeight = Math.max(0.1, distance * 0.5);
+                    const valueScore = cheapestPrice * distanceWeight;
 
                     return {
                         pub,
