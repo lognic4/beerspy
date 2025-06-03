@@ -735,6 +735,71 @@
     background: #95a5a6 !important;
     color: white;
 }
+
+/* ======== Legend Styles ======== */
+.legend-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.legend-bubble {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    font-size: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+}
+
+.legend-bubble.recent {
+    background: var(--success);
+}
+
+.legend-bubble.average {
+    background: #3498db;
+}
+
+.legend-bubble.old {
+    background: var(--warning);
+}
+
+.legend-bubble.happy-hour {
+    background: #ff69b4;
+    animation: pulse-pink 2s infinite;
+}
+
+.legend-bubble.unavailable {
+    background: #95a5a6;
+}
+
+/* Mobile legend styles */
+@media (max-width: 767px) {
+    .legend-container {
+        gap: 6px;
+    }
+
+    .legend-item {
+        font-size: 0.85rem;
+    }
+
+    .legend-bubble {
+        width: 18px;
+        height: 18px;
+    }
+}
     </style>
 </head>
 <body>
