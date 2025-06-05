@@ -2962,52 +2962,89 @@
                     datasets: [{
                         label: 'Average Price',
                         data: [],
-                        borderColor: '#2980b9',
-                        borderWidth: 2,
+                        borderColor: '#1f77b4',
+                        borderWidth: 1.5,
                         fill: false,
-                        tension: 0.1,
+                        tension: 0,
                         pointRadius: 0,
-                        pointHoverRadius: 4
+                        pointHoverRadius: 3,
+                        pointHoverBorderWidth: 1
                     }]
                 },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                ticks: {
-                                    callback: function(value) {
-                                        return '$' + value.toFixed(2);
-                                    }
-                                }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    backgroundColor: '#ffffff',
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: '#d0d0d0',
+                                lineWidth: 0.5
                             },
-                            x: {
-                                ticks: {
-                                    maxTicksLimit: 7
+                            border: {
+                                color: '#000000',
+                                width: 1
+                            },
+                            ticks: {
+                                color: '#000000',
+                                font: {
+                                    family: 'Arial, sans-serif',
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
                                 }
                             }
                         },
-                        plugins: {
-                            legend: {
-                                display: false
+                        x: {
+                            grid: {
+                                color: '#d0d0d0',
+                                lineWidth: 0.5
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return 'Avg: $' + context.parsed.y.toFixed(2);
-                                    }
+                            border: {
+                                color: '#000000',
+                                width: 1
+                            },
+                            ticks: {
+                                color: '#000000',
+                                font: {
+                                    family: 'Arial, sans-serif',
+                                    size: 11
+                                },
+                                maxTicksLimit: 7
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#000000',
+                            bodyColor: '#000000',
+                            borderColor: '#000000',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Avg: $' + context.parsed.y.toFixed(2);
                                 }
                             }
                         }
+                    },
+                    elements: {
+                        point: {
+                            hoverBackgroundColor: '#1f77b4'
+                        }
                     }
-                });
+                }
+            });
             },
 
             initializeHistogramChart() {
                 const ctx = document.getElementById('price-histogram-chart');
                 if (!ctx) return;
-
                 this.histogramChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -3015,19 +3052,52 @@
                         datasets: [{
                             label: 'Number of Prices',
                             data: [],
-                            backgroundColor: '#27ae60',
-                            borderColor: '#219a52',
-                            borderWidth: 1
+                            backgroundColor: '#1f77b4',
+                            borderColor: '#1f77b4',
+                            borderWidth: 0.5,
+                            barPercentage: 0.8,
+                            categoryPercentage: 0.9
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        backgroundColor: '#ffffff',
                         scales: {
                             y: {
                                 beginAtZero: true,
+                                grid: {
+                                    color: '#d0d0d0',
+                                    lineWidth: 0.5
+                                },
+                                border: {
+                                    color: '#000000',
+                                    width: 1
+                                },
                                 ticks: {
-                                    stepSize: 1
+                                    stepSize: 1,
+                                    color: '#000000',
+                                    font: {
+                                        family: 'Arial, sans-serif',
+                                        size: 11
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                border: {
+                                    color: '#000000',
+                                    width: 1
+                                },
+                                ticks: {
+                                    color: '#000000',
+                                    font: {
+                                        family: 'Arial, sans-serif',
+                                        size: 11
+                                    },
+                                    maxRotation: 45
                                 }
                             }
                         },
@@ -3036,6 +3106,11 @@
                                 display: false
                             },
                             tooltip: {
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                titleColor: '#000000',
+                                bodyColor: '#000000',
+                                borderColor: '#000000',
+                                borderWidth: 1,
                                 callbacks: {
                                     label: function(context) {
                                         return context.parsed.y + ' prices';
@@ -3045,7 +3120,7 @@
                         }
                     }
                 });
-            },
+                            },
 
             updateCharts() {
                 console.log("📊 Charts update:", {
