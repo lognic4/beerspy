@@ -2955,20 +2955,21 @@
                 const ctx = document.getElementById('price-trend-chart');
                 if (!ctx) return;
 
-                this.trendChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'Average Price',
-                            data: [],
-                            borderColor: '#2980b9',
-                            backgroundColor: 'rgba(41, 128, 185, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
+            this.trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Average Price',
+                        data: [],
+                        borderColor: '#2980b9',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
@@ -3134,7 +3135,7 @@
                 
                 // Create bins
                 const binCount = Math.min(8, Math.max(4, Math.ceil(Math.sqrt(prices.length))));
-                const binSize = (max - min) / binCount;
+                const binSize = 0.5;
                 const bins = [];
                 const labels = [];
 
