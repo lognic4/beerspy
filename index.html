@@ -432,8 +432,10 @@
     
     #charts-section {
         grid-area: charts;
+        width: 100%;
         margin: 0;
         order: unset;
+        grid-column: 1 / -1;
     }
 }
 
@@ -798,10 +800,11 @@
             }
             
             #charts-section {
-                order: 3; /* ✅ Charts at bottom on mobile */
+                order: 3 !important; /* ✅ Charts at bottom on mobile */
                 width: 100%;
                 margin: 0;
             }     
+
                 .charts-container {
                 grid-template-columns: 1fr; /* ✅ Stack charts vertically on mobile */
                 gap: 15px;
