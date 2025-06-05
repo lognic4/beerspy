@@ -468,16 +468,16 @@
     }
     
     .chart-wrapper {
-        min-height: 250px;
+        min-height: 280px; /* ✅ Increased from 250px */
         padding: 15px;
     }
     
     .chart-wrapper canvas {
-        height: 180px !important;
+        height: 220px !important; /* ✅ Increased from 180px */
     }
     
     .chart-empty {
-        height: 200px;
+        height: 220px; /* ✅ Match canvas height */
     }
 }
 
@@ -3152,7 +3152,10 @@
                             },
                             x: {
                                 grid: {
-                                    display: false
+                                    display: true,
+                                    color: '#e0e0e0', /* ✅ Light grid lines */
+                                    lineWidth: 0.5
+
                                 },
                                 border: {
                                     color: '#000000',
@@ -3165,7 +3168,11 @@
                                         size: 10
                                     },
                                     padding: 8,
-                                    maxRotation: 0
+                                    maxRotation: 0,
+                                    callback: function(value, index) {
+                                        const label = this.getLabelForValue(value);
+                                        return index % 2 === 0 ? label : label.replace('$', '');
+                        }
                                 },
                                 title: {
                                     display: true,
