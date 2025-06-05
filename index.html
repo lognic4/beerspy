@@ -12,8 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.28.0/dist/umd/supabase.min.js"></script>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3417/3417754.png" type="image/png">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
-    <script defer src="/_vercel/insights/script.js"></script>
 
     <style>
         /* ======== CSS Variables ======== */
@@ -135,37 +133,7 @@
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-        .charts-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .chart-wrapper {
-            background: white;
-            border-radius: 4px;
-            padding: 10px;
-            border: 1px solid #eee;
-        }
-
-        .chart-wrapper h4 {
-            margin: 0 0 10px 0;
-            font-size: 0.9rem;
-            color: var(--text-medium);
-        }
-
-        .chart-wrapper canvas {
-            height: 150px !important;
-        }
-
-        .chart-empty {
-            height: 150px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-medium);
-            font-style: italic;
-        }
+        
         /* ======== Controls Panel ======== */
 
         
@@ -1029,21 +997,6 @@
                     <button class="size-btn" data-size="jug">Jug</button>
                 </div>
             </div>
-            <div class="control-section">
-                <h3>Price Analytics</h3>
-                <div class="charts-container">
-                    <div class="chart-wrapper">
-                        <h4>Price Trend</h4>
-                        <canvas id="price-trend-chart"></canvas>
-                        <div id="price-trend-empty" class="chart-empty">Not enough data</div>
-                    </div>
-                    <div class="chart-wrapper">
-                        <h4>Price Distribution</h4>
-                        <canvas id="price-histogram-chart"></canvas>
-                        <div id="price-histogram-empty" class="chart-empty">Not enough data</div>
-                    </div>
-                </div>
-            </div>
             <!-- Add to controls panel -->
             <div class="control-section">
                 <h3>Best Value Near You</h3>
@@ -1367,17 +1320,14 @@
         </div>
     </div>
     
-    
     <!-- Footer -->
     <footer>
-        <p>BeerSpy alpha v0.2.10 &copy; 2025</p>
+        <p>BeerSpy alpha v0.2.0 &copy; 2025</p>
             <p style="font-size: 0.8rem; opacity: 0.8;">
         Drink Responsibly. Prices are user-submitted and may not be current or accurate. Location used for map display only. 
         <a href="#" onclick="showTerms()">Terms</a> | <a href="#" onclick="showPrivacy()">Privacy</a>
     </p>
     </footer>
-
-
 
     <script type="module">
         // =====================================
@@ -1794,9 +1744,8 @@
                 if (typeof PubListManager !== 'undefined') {
                     PubListManager.updatePubList();
                 }
-                ChartsManager.updateCharts();
             },
-            //on click
+
             onMarkerClick(e) {
                 const pub = e.target.pubData;
                 const beersForSize = pub.beers.filter((beer) => beer.size === appState.currentSize);
@@ -2901,272 +2850,7 @@
             }
         };
 
-        // =====================================
-        // CHARTS MANAGER
-        // =====================================
-        const ChartsManager = {
-            trendChart: null,
-            histogramChart: null,
-
-            init() {
-                // Initialize charts when DOM is ready
-                this.initializeTrendChart();
-                this.initializeHistogramChart();
-            },
-
-            initializeTrendChart() {
-                const ctx = document.getElementById('price-trend-chart');
-                if (!ctx) return;
-
-                this.trendChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'Average Price',
-                            data: [],
-                            borderColor: '#2980b9',
-                            backgroundColor: 'rgba(41, 128, 185, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                ticks: {
-                                    callback: function(value) {
-                                        return '$' + value.toFixed(2);
-                                    }
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxTicksLimit: 7
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return 'Avg: $' + context.parsed.y.toFixed(2);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            },
-
-            initializeHistogramChart() {
-                const ctx = document.getElementById('price-histogram-chart');
-                if (!ctx) return;
-
-                this.histogramChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'Number of Prices',
-                            data: [],
-                            backgroundColor: '#27ae60',
-                            borderColor: '#219a52',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.parsed.y + ' prices';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            },
-
-            updateCharts() {
-                if (!appState.pubs.length) {
-                    this.showEmptyState();
-                    return;
-                }
-
-                const priceData = this.collectPriceData();
-                
-                if (priceData.length < 2) {
-                    this.showEmptyState();
-                    return;
-                }
-
-                this.hideEmptyState();
-                this.updateTrendChart(priceData);
-                this.updateHistogramChart(priceData);
-            },
-
-            collectPriceData() {
-                const priceData = [];
-                
-                appState.pubs.forEach(pub => {
-                    pub.beers.forEach(beer => {
-                        if (beer.size === appState.currentSize && 
-                            typeof beer.price === 'number' && 
-                            !isNaN(beer.price) && 
-                            beer.price > 0) {
-                            
-                            const date = beer.last_updated ? new Date(beer.last_updated) : new Date();
-                            priceData.push({
-                                date: date,
-                                price: beer.price,
-                                dateString: date.toISOString().split('T')[0] // YYYY-MM-DD
-                            });
-                        }
-                    });
-                });
-
-                return priceData.sort((a, b) => a.date - b.date);
-            },
-
-            updateTrendChart(priceData) {
-                if (!this.trendChart) return;
-
-                // Group by date and calculate daily averages
-                const dailyPrices = new Map();
-                
-                priceData.forEach(item => {
-                    if (!dailyPrices.has(item.dateString)) {
-                        dailyPrices.set(item.dateString, []);
-                    }
-                    dailyPrices.get(item.dateString).push(item.price);
-                });
-
-                // Calculate averages and format for chart
-                const labels = [];
-                const averages = [];
-
-                Array.from(dailyPrices.entries())
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .forEach(([dateString, prices]) => {
-                        const average = prices.reduce((sum, price) => sum + price, 0) / prices.length;
-                        labels.push(this.formatDateLabel(dateString));
-                        averages.push(average);
-                    });
-
-                this.trendChart.data.labels = labels;
-                this.trendChart.data.datasets[0].data = averages;
-                this.trendChart.data.datasets[0].label = `Average ${appState.currentSize.charAt(0).toUpperCase() + appState.currentSize.slice(1)} Price`;
-                this.trendChart.update();
-            },
-
-            updateHistogramChart(priceData) {
-                if (!this.histogramChart) return;
-
-                const prices = priceData.map(item => item.price);
-                const min = Math.min(...prices);
-                const max = Math.max(...prices);
-                
-                // Create bins
-                const binCount = Math.min(8, Math.max(4, Math.ceil(Math.sqrt(prices.length))));
-                const binSize = (max - min) / binCount;
-                const bins = [];
-                const labels = [];
-
-                for (let i = 0; i < binCount; i++) {
-                    const binStart = min + (i * binSize);
-                    const binEnd = min + ((i + 1) * binSize);
-                    
-                    bins.push(0);
-                    
-                    if (i === binCount - 1) {
-                        labels.push(`$${binStart.toFixed(0)}+`);
-                    } else {
-                        labels.push(`$${binStart.toFixed(0)}-${binEnd.toFixed(0)}`);
-                    }
-                }
-
-                // Count prices in each bin
-                prices.forEach(price => {
-                    const binIndex = Math.min(Math.floor((price - min) / binSize), binCount - 1);
-                    bins[binIndex]++;
-                });
-
-                this.histogramChart.data.labels = labels;
-                this.histogramChart.data.datasets[0].data = bins;
-                this.histogramChart.data.datasets[0].label = `${appState.currentSize.charAt(0).toUpperCase() + appState.currentSize.slice(1)} Prices`;
-                this.histogramChart.update();
-            },
-
-            formatDateLabel(dateString) {
-                const date = new Date(dateString);
-                const now = new Date();
-                const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-                
-                if (diffDays === 0) return 'Today';
-                if (diffDays === 1) return 'Yesterday';
-                if (diffDays < 7) return `${diffDays}d ago`;
-                
-                return date.toLocaleDateString('en-AU', { 
-                    month: 'short', 
-                    day: 'numeric' 
-                });
-            },
-
-            showEmptyState() {
-                this.hideCharts();
-                document.getElementById('price-trend-empty').style.display = 'flex';
-                document.getElementById('price-histogram-empty').style.display = 'flex';
-            },
-
-            hideEmptyState() {
-                this.showCharts();
-                document.getElementById('price-trend-empty').style.display = 'none';
-                document.getElementById('price-histogram-empty').style.display = 'none';
-            },
-
-            showCharts() {
-                document.getElementById('price-trend-chart').style.display = 'block';
-                document.getElementById('price-histogram-chart').style.display = 'block';
-            },
-
-            hideCharts() {
-                document.getElementById('price-trend-chart').style.display = 'none';
-                document.getElementById('price-histogram-chart').style.display = 'none';
-            },
-
-            destroy() {
-                if (this.trendChart) {
-                    this.trendChart.destroy();
-                    this.trendChart = null;
-                }
-                if (this.histogramChart) {
-                    this.histogramChart.destroy();
-                    this.histogramChart = null;
-                }
-            }
-        };
+        
 
         // =====================================
         // EVENT LISTENERS
@@ -3385,12 +3069,9 @@
                 // Initialize search functionality
                 SearchManager.init();
                 
-                ChartsManager.init();
                 // Fetch and display data
                 PubListManager.init();
                 await DataManager.fetchBeerPrices();
-                // Statistics initialize
-
 
                 
                 console.log("BeerSpy application initialized successfully!");
