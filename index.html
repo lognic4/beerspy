@@ -369,8 +369,8 @@
         
         /* ======== Popups ======== */
         .pub-popup {
-            min-width: 240px;
-            max-width: 300px;
+            min-width: 280px;
+            max-width: 350px;
         }
         
         .pub-popup h3 {
@@ -389,22 +389,43 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
+            font-size:0.9rem;
         }
         
         .beer-table th {
             text-align: left;
-            padding: 8px;
+            padding: 6px 4px;
             background: var(--medium-gray);
             border-bottom: 1px solid #ddd;
             font-weight: 600;
             color: var(--text-medium);
+            font-size:0.8rem;
         }
         
         .beer-table td {
-            padding: 8px;
+            padding: 6px 4px;
             border-bottom: 1px solid #f0f0f0;
+            font-size:0.85rem;
         }
-        
+        .beer-table th:nth-child(1),
+        .beer-table td:nth-child(1) {
+            width: 35%;  /* Category column */
+        }
+
+        .beer-table th:nth-child(2),
+        .beer-table td:nth-child(2) {
+            width: 20%;  /* Size column */
+        }
+
+        .beer-table th:nth-child(3),
+        .beer-table td:nth-child(3) {
+            width: 25%;  /* Price column */
+        }
+
+        .beer-table th:nth-child(4),
+        .beer-table td:nth-child(4) {
+            width: 20%;  /* Status column */
+        }
         .beer-price {
             text-align: right;
             color: var(--warning);
@@ -416,6 +437,27 @@
             color: white;
             padding: 2px 6px;
             border-radius: 3px;
+        }
+        /* Happy hour schedule row styling */
+        .beer-table tr[style*="background: #f8f9fa"] td {
+            border-bottom: 1px solid #e9ecef;
+            padding: 4px;
+        }
+        @media (max-width: 480px) {
+            .pub-popup {
+                min-width: 260px;
+                max-width: 300px;
+            }
+            
+            .beer-table {
+                font-size: 0.8rem;
+            }
+            
+            .beer-table th,
+            .beer-table td {
+                padding: 4px 2px;
+                font-size: 0.75rem;
+            }
         }
         
         .last-updated {
@@ -1728,36 +1770,99 @@
                                 <th>Category</th>
                                 <th>Size</th>
                                 <th>Price</th>
+                                <th>Status</th>
                             </tr>
                 `;
 
-                const beerMap = new Map();
+                // Group beers by category and size, separating regular and happy hour
+                const beerGroups = new Map();
+                
                 beers.forEach(beer => {
                     const key = `${beer.name}_${beer.size}`;
-                    const existingBeer = beerMap.get(key);
+                    if (!beerGroups.has(key)) {
+                        beerGroups.set(key, {
+                            category: beer.name,
+                            size: beer.size,
+                            regular: null,
+                            happyHour: null
+                        });
+                    }
+                    
+                    const group = beerGroups.get(key);
                     const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
                     
-                    if (!existingBeer || beerTime > existingBeer.time) {
-                        beerMap.set(key, { beer, time: beerTime });
+                    if (beer.is_happy_hour) {
+                        // Keep most recent happy hour price
+                        if (!group.happyHour || beerTime > group.happyHour.time) {
+                            group.happyHour = { beer, time: beerTime };
+                        }
+                    } else {
+                        // Keep most recent regular price
+                        if (!group.regular || beerTime > group.regular.time) {
+                            group.regular = { beer, time: beerTime };
+                        }
                     }
                 });
 
-                const uniqueBeers = Array.from(beerMap.values())
-                    .map(i => i.beer)
-                    .sort((a, b) => a.price - b.price);
+                // Sort by price (regular price first, then happy hour price if no regular)
+                const sortedGroups = Array.from(beerGroups.values()).sort((a, b) => {
+                    const priceA = a.regular?.beer.price || a.happyHour?.beer.price || 999;
+                    const priceB = b.regular?.beer.price || b.happyHour?.beer.price || 999;
+                    return priceA - priceB;
+                });
 
-                uniqueBeers.forEach((beer) => {
-                    const isHappyHour = beer.is_happy_hour;
-                    const priceClass = isHappyHour ? ' happy-hour' : '';
-                    const happyHourText = isHappyHour ? ' (Happy Hour)' : '';
+                sortedGroups.forEach((group) => {
+                    const categoryName = BEER_CATEGORIES[group.category] || group.category;
                     
-                    content += `
-                        <tr>
-                            <td>${BEER_CATEGORIES[beer.name] || beer.name}${happyHourText}</td>
-                            <td>${beer.size}</td>
-                            <td class="beer-price${priceClass}">${Utils.formatPrice(beer.price)}</td>
-                        </tr>
-                    `;
+                    // Show regular price
+                    if (group.regular) {
+                        content += `
+                            <tr>
+                                <td>${categoryName}</td>
+                                <td>${group.size}</td>
+                                <td class="beer-price">${Utils.formatPrice(group.regular.beer.price)}</td>
+                                <td><span style="color: #27ae60; font-size: 0.8em;">✓ Current</span></td>
+                            </tr>
+                        `;
+                    }
+                    
+                    // Show happy hour price
+                    if (group.happyHour) {
+                        const isCurrentlyActive = this.checkIfCurrentlyHappyHour(group.happyHour.beer);
+                        const statusClass = isCurrentlyActive ? 'color: #ff69b4; font-weight: bold;' : 'color: #95a5a6;';
+                        const statusText = isCurrentlyActive ? '🎉 Happy Hour!' : 'Happy Hour (inactive)';
+                        const priceClass = isCurrentlyActive ? ' happy-hour' : '';
+                        
+                        content += `
+                            <tr>
+                                <td>${categoryName}</td>
+                                <td>${group.size}</td>
+                                <td class="beer-price${priceClass}">${Utils.formatPrice(group.happyHour.beer.price)}</td>
+                                <td><span style="${statusClass} font-size: 0.8em;">${statusText}</span></td>
+                            </tr>
+                        `;
+                        
+                        // Add happy hour schedule info
+                        if (group.happyHour.beer.happy_hour_start && group.happyHour.beer.happy_hour_end && group.happyHour.beer.happy_hour_days) {
+                            const days = Array.isArray(group.happyHour.beer.happy_hour_days) 
+                                ? group.happyHour.beer.happy_hour_days.map(d => d.substring(0,3)).join(', ')
+                                : 'Schedule TBC';
+                            const timeRange = `${group.happyHour.beer.happy_hour_start}-${group.happyHour.beer.happy_hour_end}`;
+                            
+                            content += `
+                                <tr style="background: #f8f9fa;">
+                                    <td colspan="4" style="font-size: 0.75em; color: #666; font-style: italic;">
+                                        Happy Hour: ${days}, ${timeRange}
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    }
+                    
+                    // If only happy hour price exists, show it as the main price
+                    if (!group.regular && group.happyHour) {
+                        // Already handled above
+                    }
                 });
 
                 const mostRecentUpdate = beers.reduce((latest, beer) => {
@@ -1771,6 +1876,9 @@
                 content += `
                         </table>
                         <div class="last-updated">Updated: ${lastUpdatedDate}</div>
+                        <div style="font-size: 0.75rem; color: #95a5a6; margin-bottom: 10px;">
+                            💡 Prices are user-submitted and may not reflect current rates
+                        </div>
                         <div class="popup-actions">
                             <button class="add-beer-btn">Submit New Price</button>
                         </div>
