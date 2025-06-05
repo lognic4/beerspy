@@ -420,8 +420,9 @@
     
     #map-container {
         grid-area: map;
-        height: calc(60vh - 80px);
-        min-height: 400px;
+
+        height: 65vh;  /* ✅ Simple, reliable height */
+        min-height: 450px;
     }
     
     #map-controls {
@@ -433,6 +434,7 @@
     #charts-section {
         grid-area: charts;
         margin: 0;
+        order: 3
     }
 }
 
