@@ -2697,33 +2697,48 @@
             update() {
                 const totalPubs = appState.pubs.length;
                 
-                const uniqueBeerNames = new Set();
-                appState.pubs.forEach((pub) => {
-                    pub.beers.forEach((beer) => {
-                        uniqueBeerNames.add(beer.name);
-                    });
-                });
-                const totalUniqueBeers = uniqueBeerNames.size;
-
+                // Count total price entries for current size AND collect valid prices
+                let totalPriceEntries = 0;
                 const prices = [];
+                
                 appState.pubs.forEach((pub) => {
                     const beersForSize = pub.beers.filter((beer) => beer.size === appState.currentSize);
-                    beersForSize.forEach((beer) => prices.push(beer.price));
+                    totalPriceEntries += beersForSize.length; // Count all entries for this size
+                    
+                    beersForSize.forEach((beer) => {
+                        // Only include valid numbers in average calculation
+                        if (typeof beer.price === 'number' && !isNaN(beer.price) && beer.price > 0) {
+                            prices.push(beer.price);
+                        }
+                    });
                 });
 
+                // Calculate average price using only valid prices
                 const avgPriceValue = prices.length > 0
                     ? (prices.reduce((total, price) => total + price, 0) / prices.length).toFixed(2)
                     : "N/A";
 
+                // Update display elements
                 const elements = {
                     pubsCount: document.getElementById("pubs-count"),
                     beersCount: document.getElementById("beers-count"),
                     avgPrice: document.getElementById("avg-price")
                 };
 
-                if (elements.pubsCount) elements.pubsCount.textContent = totalPubs;
-                if (elements.beersCount) elements.beersCount.textContent = totalUniqueBeers;
-                if (elements.avgPrice) elements.avgPrice.textContent = avgPriceValue === "N/A" ? "N/A" : `$${avgPriceValue}`;
+                if (elements.pubsCount) {
+                    elements.pubsCount.textContent = totalPubs;
+                }
+                
+                if (elements.beersCount) {
+                    elements.beersCount.textContent = totalPriceEntries; // ✅ Now shows price entries for current size
+                }
+                
+                if (elements.avgPrice) {
+                    elements.avgPrice.textContent = avgPriceValue === "N/A" ? "N/A" : `$${avgPriceValue}`;
+                }
+
+                // Debug info (remove in production)
+                console.log(`📊 Stats: ${totalPubs} pubs, ${totalPriceEntries} ${appState.currentSize} entries, ${prices.length} valid prices, avg: $${avgPriceValue}`);
             }
         };
 
