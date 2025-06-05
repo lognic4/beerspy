@@ -403,24 +403,26 @@
             font-style: italic;
             display: none;
         }
+/* New Charts Container */
+#charts-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    width: 100%;
+    padding: 0 20px;
+}
 
-/* ======== Responsive Design ======== */
 @media (min-width: 768px) {
     #main-container {
         display: grid;
         grid-template-columns: 1fr 300px;
-        grid-template-rows: auto auto;
-        grid-template-areas:
-            "map controls"
-            "charts charts";
+        grid-template-areas: "map controls";
         gap: 20px;
         align-items: start;
     }
     
     #map-container {
         grid-area: map;
-
-        height: 65vh;  /* ✅ Simple, reliable height */
+        height: 65vh;
         min-height: 450px;
     }
     
@@ -430,12 +432,52 @@
         margin: 0;
     }
     
-    #charts-section {
-        grid-area: charts;
+    /* Charts container matches map width on desktop */
+    #charts-container {
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 767px) {
+    #main-container {
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        gap: 20px;
+    }
+
+    #map-container {
+        height: 60vh;
+        min-height: 350px;
+    }
+    
+    #map-controls {
         width: 100%;
         margin: 0;
-        order: unset;
-        grid-column: 1 / -1;
+    }
+    
+    /* Charts container on mobile */
+    #charts-container {
+        margin: 10px auto 20px auto;
+        padding: 0 10px;
+    }
+    
+    .charts-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .chart-wrapper {
+        min-height: 250px;
+        padding: 15px;
+    }
+    
+    .chart-wrapper canvas {
+        height: 180px !important;
+    }
+    
+    .chart-empty {
+        height: 200px;
     }
 }
 
@@ -778,80 +820,6 @@
         
         /* ======== Responsive Design ======== */
 
-
-        @media (max-width: 767px) {
-            #main-container {
-                display: flex;
-                flex-direction: column;
-                padding: 10px;
-                gap: 20px;
-            }
-
-            #map-container {
-                order: 1;
-                height: 60vh; /* ✅ Slightly smaller on mobile */
-                min-height: 350px;
-            }
-            
-            #map-controls {
-                order: 2;
-                width: 100%;
-                margin: 0;
-            }
-            
-            #charts-section {
-                order: 3 !important; /* ✅ Charts at bottom on mobile */
-                width: 100%;
-                margin: 0;
-            }     
-
-                .charts-container {
-                grid-template-columns: 1fr; /* ✅ Stack charts vertically on mobile */
-                gap: 15px;
-            }
-            
-            .chart-wrapper {
-                min-height: 250px; /* ✅ Smaller height on mobile */
-                padding: 15px;
-            }
-            
-            .chart-wrapper canvas {
-                height: 180px !important; /* ✅ Smaller chart height */
-            }
-            
-            .chart-empty {
-                height: 200px;
-            }
-            
-            .search-container {
-                position: absolute;
-                top: 10px;
-                left: 10px;
-                right: 10px;
-                width: auto;
-            }
-            
-            .size-filter {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .stats-container {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .stat-card {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 15px;
-            }
-            
-            .stat-card .value {
-                font-size: 1.1rem;
-            }
-        }
-
         .days-filter {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -1173,24 +1141,25 @@
     </div>
 </div>
 
-        <!-- Charts Section -->
+<div id="charts-container">
     <div id="charts-section">
-                <div class="control-section">
-                    <h3>Price Analytics</h3>
-                    <div class="charts-container">
-                        <div class="chart-wrapper">
-                            <h4>Average Price Over Time</h4>
-                            <canvas id="price-trend-chart"></canvas>
-                            <div id="price-trend-empty" class="chart-empty">Not enough data</div>
-                        </div>
-                        <div class="chart-wrapper">
-                            <h4>Price Distribution</h4>
-                            <canvas id="price-histogram-chart"></canvas>
-                            <div id="price-histogram-empty" class="chart-empty">Not enough data</div>
-                        </div>
-                    </div>
+        <div class="control-section">
+            <h3>Price Analytics</h3>
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <h4>Average Price Over Time</h4>
+                    <canvas id="price-trend-chart"></canvas>
+                    <div id="price-trend-empty" class="chart-empty">Not enough data</div>
                 </div>
-
+                <div class="chart-wrapper">
+                    <h4>Price Distribution</h4>
+                    <canvas id="price-histogram-chart"></canvas>
+                    <div id="price-histogram-empty" class="chart-empty">Not enough data</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- Add Pub Modal -->
     <div class="modal" id="add-pub-modal">
         <div class="modal-content">
