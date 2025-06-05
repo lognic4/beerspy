@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.28.0/dist/umd/supabase.min.js"></script>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3417/3417754.png" type="image/png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
 
     <style>
         /* ======== CSS Variables ======== */
@@ -133,7 +134,37 @@
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .chart-wrapper {
+            background: white;
+            border-radius: 4px;
+            padding: 10px;
+            border: 1px solid #eee;
+        }
+
+        .chart-wrapper h4 {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            color: var(--text-medium);
+        }
+
+        .chart-wrapper canvas {
+            height: 150px !important;
+        }
+
+        .chart-empty {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-medium);
+            font-style: italic;
+        }
         /* ======== Controls Panel ======== */
 
         
@@ -997,6 +1028,21 @@
                     <button class="size-btn" data-size="jug">Jug</button>
                 </div>
             </div>
+            <div class="control-section">
+                <h3>Price Analytics</h3>
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <h4>Price Trend</h4>
+                        <canvas id="price-trend-chart"></canvas>
+                        <div id="price-trend-empty" class="chart-empty">Not enough data</div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h4>Price Distribution</h4>
+                        <canvas id="price-histogram-chart"></canvas>
+                        <div id="price-histogram-empty" class="chart-empty">Not enough data</div>
+                    </div>
+                </div>
+            </div>
             <!-- Add to controls panel -->
             <div class="control-section">
                 <h3>Best Value Near You</h3>
@@ -1320,6 +1366,7 @@
         </div>
     </div>
     
+    
     <!-- Footer -->
     <footer>
         <p>BeerSpy alpha v0.2.10 &copy; 2025</p>
@@ -1328,6 +1375,8 @@
         <a href="#" onclick="showTerms()">Terms</a> | <a href="#" onclick="showPrivacy()">Privacy</a>
     </p>
     </footer>
+
+
 
     <script type="module">
         // =====================================
@@ -1744,6 +1793,7 @@
                 if (typeof PubListManager !== 'undefined') {
                     PubListManager.updatePubList();
                 }
+                ChartsManager.updateCharts();
             },
 
             onMarkerClick(e) {
@@ -3337,6 +3387,8 @@
                 // Fetch and display data
                 PubListManager.init();
                 await DataManager.fetchBeerPrices();
+                // Statistics initialize
+                ChartsManager.init();
 
                 
                 console.log("BeerSpy application initialized successfully!");
