@@ -3133,29 +3133,30 @@
                 const min = Math.min(...prices);
                 const max = Math.max(...prices);
                 
-                // Create bins
-                const binCount = Math.min(8, Math.max(4, Math.ceil(Math.sqrt(prices.length))));
-                const binSize = 0.5;
+                // Create bins with fixed 50c increments for better granularity
+                const binSize = 0.5; // 50c increments
+                const minBin = Math.floor(min * 2) / 2; // Round down to nearest 50c
+                const maxBin = Math.ceil(max * 2) / 2; // Round up to nearest 50c
+                const binCount = Math.ceil((maxBin - minBin) / binSize);
+                
                 const bins = [];
                 const labels = [];
 
                 for (let i = 0; i < binCount; i++) {
-                    const binStart = min + (i * binSize);
-                    const binEnd = min + ((i + 1) * binSize);
+                    const binStart = minBin + (i * binSize);
                     
                     bins.push(0);
                     
-                    if (i === binCount - 1) {
-                        labels.push(`$${binStart.toFixed(0)}+`);
-                    } else {
-                        labels.push(`$${binStart.toFixed(0)}-${binEnd.toFixed(0)}`);
-                    }
+                    // Format labels to show 50c ranges (e.g., $8.0, $8.5, $9.0)
+                    labels.push(`$${binStart.toFixed(1)}`);
                 }
 
                 // Count prices in each bin
                 prices.forEach(price => {
-                    const binIndex = Math.min(Math.floor((price - min) / binSize), binCount - 1);
-                    bins[binIndex]++;
+                    const binIndex = Math.min(Math.floor((price - minBin) / binSize), binCount - 1);
+                    if (binIndex >= 0) {
+                        bins[binIndex]++;
+                    }
                 });
 
                 this.histogramChart.data.labels = labels;
