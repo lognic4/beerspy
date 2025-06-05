@@ -3464,18 +3464,33 @@
                         pub.lon
                     );
 
-                    // Separate regular and currently active happy hour beers (SAME LOGIC AS MAP MARKERS)
-                    const regularBeers = [];
-                    const activeHappyHourBeers = [];
-
+                    // ✅ Use SAME logic as map markers - group by beer name and get most recent for each
+                    const regularBeerMap = new Map();
+                    const happyHourBeerMap = new Map();
+                    
                     beersForSize.forEach(beer => {
-                        if (beer.is_happy_hour && MapManager.checkIfCurrentlyHappyHour(beer)) {
-                            activeHappyHourBeers.push(beer);
-                        } else if (!beer.is_happy_hour) {
-                            regularBeers.push(beer);
+                        const beerTime = beer.last_updated ? new Date(beer.last_updated) : new Date(0);
+                        
+                        if (beer.is_happy_hour) {
+                            const existingHappyHour = happyHourBeerMap.get(beer.name);
+                            if (!existingHappyHour || beerTime > existingHappyHour.time) {
+                                happyHourBeerMap.set(beer.name, { beer, time: beerTime });
+                            }
+                        } else {
+                            const existingRegular = regularBeerMap.get(beer.name);
+                            if (!existingRegular || beerTime > existingRegular.time) {
+                                regularBeerMap.set(beer.name, { beer, time: beerTime });
+                            }
                         }
-                        // Skip inactive happy hour beers completely
                     });
+
+                    // Check for currently active happy hour beers
+                    const activeHappyHourBeers = Array.from(happyHourBeerMap.values())
+                        .filter(item => MapManager.checkIfCurrentlyHappyHour(item.beer))
+                        .map(item => item.beer);
+
+                    // Get regular beers (most recent for each category)
+                    const regularBeers = Array.from(regularBeerMap.values()).map(item => item.beer);
 
                     // Determine cheapest available price and its type
                     let cheapestPrice = null;
