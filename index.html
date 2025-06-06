@@ -460,6 +460,7 @@
     #charts-container {
         margin: 10px auto 20px auto;
         padding: 0 10px;
+        overflow: hidden;
     }
     
     .charts-container {
@@ -470,10 +471,13 @@
     .chart-wrapper {
         min-height: 280px; /* ✅ Increased from 250px */
         padding: 15px;
+        overflow: hidden;
+        max-width: 100%;
     }
     
     .chart-wrapper canvas {
         height: 220px !important; /* ✅ Increased from 180px */
+        max-width: 100% !important;
     }
     
     .chart-empty {
