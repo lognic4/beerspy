@@ -1,0 +1,30 @@
+{
+  "name": "BeerSpy Melbourne",
+  "short_name": "BeerSpy",
+  "description": "Live beer prices map for Melbourne pubs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2c3e50",
+  "theme_color": "#2c3e50",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png", 
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["food", "lifestyle", "social"],
+  "shortcuts": [
+    {
+      "name": "Add New Pub",
+      "url": "/?action=add-pub",
+      "icons": [{"src": "icons/add-icon.png", "sizes": "96x96"}]
+    }
+  ]
+}

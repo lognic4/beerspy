@@ -14,6 +14,13 @@
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3417/3417754.png" type="image/png">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="BeerSpy">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
 
     <style>
         /* ======== CSS Variables ======== */
@@ -484,6 +491,32 @@
         height: 220px; /* ✅ Match canvas height */
     }
 }
+
+        /* PWA-specific improvements */
+        @media (display-mode: standalone) {
+        /* Hide browser-specific elements when app is installed */
+        .search-container {
+            top: 10px; /* Less space needed without browser bar */
+        }
+        }
+
+        /* Touch-friendly buttons */
+        @media (max-width: 767px) {
+        .size-btn, .day-btn, .toggle-btn {
+            min-height: 44px; /* Apple's recommended touch target */
+            font-size: 0.9rem;
+        }
+        
+        /* Improve popup sizing on mobile */
+        .leaflet-popup-content {
+            max-width: calc(100vw - 40px) !important;
+        }
+        }
+
+        /* Pull-to-refresh indicator */
+        body {
+        overscroll-behavior-y: contain;
+        }
 
         /* Happy hour styling - higher specificity to override age classes */
         .price-bubble.happy-hour,
@@ -3651,6 +3684,56 @@
             }
         });
         //Test!
+                // PWA Install prompt
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show your custom install button
+        const installButton = document.createElement('button');
+        installButton.textContent = '📱 Install App';
+        installButton.style.cssText = `
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            z-index: 1000;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 25px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        `;
+        
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response: ${outcome}`);
+            deferredPrompt = null;
+            installButton.remove();
+            }
+        });
+        
+        document.body.appendChild(installButton);
+        });
     </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW registered: ', registration);
+      })
+      .catch((registrationError) => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
+}
+</script>
 </body>
 </html>
