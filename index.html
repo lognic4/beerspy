@@ -491,6 +491,13 @@
         height: 220px; /* ✅ Match canvas height */
     }
 }
+.leaflet-popup-pane {
+    z-index: 1200 !important;
+}
+
+.leaflet-popup {
+    z-index: 1200 !important;
+}
 
         /* PWA-specific improvements */
         @media (display-mode: standalone) {
@@ -512,6 +519,7 @@
             max-width: calc(100vw - 40px) !important;
         }
         }
+
 
         /* Pull-to-refresh indicator */
         body {
