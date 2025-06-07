@@ -1787,7 +1787,7 @@
     
 
                 appState.map.on("popupopen", (e) => {
-                                    document.getElementById('.search-container').classList.remove('show');
+                                    document.querySelector('.search-container').classList.remove('show');
 
                     setTimeout(() => {
                         const popupContainer = e.popup.getElement();
@@ -1813,6 +1813,7 @@
                     }, 100);
                 });
                             appState.map.on("popupclose", (e) => {
+                                    document.querySelector('.search-container').style.display = 'block';
                 // Allow search results to show again when popup closes
                 // (they'll only show if there's an active search)
             });
