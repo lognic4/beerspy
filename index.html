@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeerSpy Melbourne - Live Beer Prices Map</title>
     
@@ -1839,47 +1842,43 @@
             },
 
             setupMapEvents() {
-                appState.map.on('click', (e) => {
-                    if (!e.originalEvent.target.closest('.leaflet-marker-icon')) {
-                        appState.map.closePopup();
+    appState.map.on('click', (e) => {
+        if (!e.originalEvent.target.closest('.leaflet-marker-icon')) {
+            appState.map.closePopup();
+        }
+    });
+
+    appState.map.on("popupopen", (e) => {
+        // DON'T hide search container - just let search results hide naturally via click handlers
+        
+        setTimeout(() => {
+            const popupContainer = e.popup.getElement();
+            if (!popupContainer) return;
+            
+            const contentNode = popupContainer.querySelector(".leaflet-popup-content");
+            if (!contentNode) return;
+            
+            const submitBtn = contentNode.querySelector(".add-beer-btn");
+            if (submitBtn) {
+                submitBtn.onclick = () => {
+                    const popupLatLng = e.popup.getLatLng();
+                    const pub = appState.pubs.find(p => 
+                        Math.abs(p.lat - popupLatLng.lat) < 0.0001 && 
+                        Math.abs(p.lon - popupLatLng.lng) < 0.0001
+                    );
+                    if (pub) {
+                        appState.currentPubForPriceUpdate = pub;
+                        ModalManager.openSubmitPriceModal(pub);
                     }
-                });
-                // Hide search results when popup opens
-    
+                };
+            }
+        }, 100);
+    });
 
-                appState.map.on("popupopen", (e) => {
-                                    document.querySelector('.search-container').style.display = 'none';
-
-                    setTimeout(() => {
-                        const popupContainer = e.popup.getElement();
-                        if (!popupContainer) return;
-                        
-                        const contentNode = popupContainer.querySelector(".leaflet-popup-content");
-                        if (!contentNode) return;
-                        
-                        const submitBtn = contentNode.querySelector(".add-beer-btn");
-                        if (submitBtn) {
-                            submitBtn.onclick = () => {
-                                const popupLatLng = e.popup.getLatLng();
-                                const pub = appState.pubs.find(p => 
-                                    Math.abs(p.lat - popupLatLng.lat) < 0.0001 && 
-                                    Math.abs(p.lon - popupLatLng.lng) < 0.0001
-                                );
-                                if (pub) {
-                                    appState.currentPubForPriceUpdate = pub;
-                                    ModalManager.openSubmitPriceModal(pub);
-                                }
-                            };
-                        }
-                    }, 100);
-                });
-                            appState.map.on("popupclose", (e) => {
-                                    document.querySelector('.search-container').style.display = '';
-                // Allow search results to show again when popup closes
-                // (they'll only show if there's an active search)
-            });
-            },
-
+    appState.map.on("popupclose", (e) => {
+        // DON'T restore search container visibility - let the search system handle its own state
+    });
+},
             createCustomIcon(price, ageClass, isCurrentlyHappyHour = false, showUnavailable = false) {
                 const happyHourClass = isCurrentlyHappyHour ? ' happy-hour' : '';
                 const unavailableClass = showUnavailable ? ' unavailable ' : '';
@@ -2374,9 +2373,13 @@ const SearchManager = {
     requestQueue: [],
     isProcessing: false,
     lastRequestTime: 0,
-    MIN_REQUEST_INTERVAL: 1100, // 1.1 seconds to respect rate limits
+    MIN_REQUEST_INTERVAL: 1100,
+    initialized: false, // Add flag to prevent duplicate initialization
     
     init() {
+        if (this.initialized) return; // Prevent duplicate initialization
+        this.initialized = true;
+        
         this.initMainSearch();
         this.initAddPubSearch();
         this.preloadCommonSearches();
@@ -2392,14 +2395,37 @@ const SearchManager = {
             return;
         }
 
-        searchInput.addEventListener("input", Utils.debounce((e) => {
+        // Clear any existing listeners
+        searchInput.removeEventListener("input", this.mainSearchHandler);
+        
+        // Create bound handler function
+        this.mainSearchHandler = Utils.debounce((e) => {
             this.handleMainSearch(e.target.value.trim(), resultsDiv);
-        }, 150));
+        }, 150);
+        
+        searchInput.addEventListener("input", this.mainSearchHandler);
 
-        // Hide results when clicking outside
-        document.addEventListener("click", (e) => {
-            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
-                resultsDiv.classList.remove('show');
+        // Improved click outside handler - be more specific about what should close results
+        this.mainClickOutsideHandler = (e) => {
+            // Don't close if clicking on search input, results, or map markers
+            if (searchInput.contains(e.target) || 
+                resultsDiv.contains(e.target) ||
+                e.target.closest('.leaflet-marker-icon') ||
+                e.target.closest('.leaflet-popup') ||
+                e.target.closest('.modal')) {
+                return;
+            }
+            resultsDiv.classList.remove('show');
+        };
+        
+        // Remove existing listener if it exists
+        document.removeEventListener("click", this.mainClickOutsideHandler);
+        document.addEventListener("click", this.mainClickOutsideHandler);
+
+        // Handle search input focus to show results if they exist
+        searchInput.addEventListener("focus", () => {
+            if (resultsDiv.innerHTML.trim() && searchInput.value.trim().length >= 2) {
+                resultsDiv.classList.add('show');
             }
         });
     },
@@ -2437,7 +2463,11 @@ const SearchManager = {
             return;
         }
 
-        addressInput.addEventListener("input", Utils.debounce(async () => {
+        // Clear any existing listeners
+        addressInput.removeEventListener("input", this.addPubSearchHandler);
+        
+        // Create bound handler function
+        this.addPubSearchHandler = Utils.debounce(async () => {
             const query = addressInput.value.trim();
             
             if (query.length < 3) {
@@ -2458,14 +2488,22 @@ const SearchManager = {
                 addressResults.innerHTML = '<div class="address-result-item">Search error</div>';
                 addressResults.style.display = "block";
             }
-        }, 150));
+        }, 150);
+        
+        addressInput.addEventListener("input", this.addPubSearchHandler);
 
-        // Hide results when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!addressInput.contains(e.target) && !addressResults.contains(e.target)) {
+        // Improved click outside handler for modal search
+        this.addPubClickOutsideHandler = (e) => {
+            if (!addressInput.contains(e.target) && 
+                !addressResults.contains(e.target) &&
+                !e.target.closest('.modal')) {
                 addressResults.style.display = "none";
             }
-        });
+        };
+        
+        // Remove existing listener if it exists
+        document.removeEventListener('click', this.addPubClickOutsideHandler);
+        document.addEventListener('click', this.addPubClickOutsideHandler);
     },
 
     // ========== SHARED SEARCH LOGIC ==========
@@ -2700,7 +2738,9 @@ const SearchManager = {
     // ========== EVENT HANDLERS ==========
     attachMainSearchHandlers(resultsDiv) {
         resultsDiv.querySelectorAll('.search-item').forEach(item => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                
                 const lat = parseFloat(item.dataset.lat);
                 const lon = parseFloat(item.dataset.lon);
                 const type = item.dataset.type;
@@ -2812,8 +2852,7 @@ const SearchManager = {
             lastRequestTime: new Date(this.lastRequestTime).toLocaleTimeString()
         };
     }
-};   
-
+};
 
 function getSelectedDays(containerSelector) {
             const container = document.querySelector(containerSelector);
@@ -2875,6 +2914,11 @@ function getSelectedDays(containerSelector) {
                         modal.style.display = "flex";
                         this.resetAddPubForm();
                         Utils.hideError();
+                        
+                        // Initialize add pub search AFTER modal is shown
+                        setTimeout(() => {
+                            SearchManager.initAddPubSearch();
+                        }, 100);
                     });
                 }
 
