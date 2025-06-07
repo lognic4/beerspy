@@ -240,13 +240,13 @@
         }
         
         /* ======== Search Bar ======== */
-.search-container {
-    position: fixed;  /* Change from absolute to fixed */
-    top: 98px;        /* Adjust for header height */
-    right: 38px;      /* Account for main container padding */
-    z-index: 1000;
-    width: 300px;
-}
+        .search-container {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            z-index: 1000;
+            width: 300px;
+        }
 
         .search-bar {
             display: flex;
@@ -1109,15 +1109,14 @@
             <div id="map"></div>
             
             <!-- Search Bar -->
-
-        </div>
-                            <div class="search-container">
+                    <div class="search-container">
                         <div class="search-bar">
                          <input type="text" id="pub-search" placeholder="Search places in Melbourne...">
                         <button class="search-btn"><i class="fas fa-search"></i></button>
                 </div>
                 <div class="search-results" id="search-results"></div>
             </div>
+        </div>
 
         
         <!-- Map Controls Panel -->
@@ -1783,6 +1782,9 @@
                         appState.map.closePopup();
                     }
                 });
+                // Hide search results when popup opens
+                document.getElementById('search-results').classList.remove('show');
+    
 
                 appState.map.on("popupopen", (e) => {
                     setTimeout(() => {
@@ -1808,6 +1810,10 @@
                         }
                     }, 100);
                 });
+                            appState.map.on("popupclose", (e) => {
+                // Allow search results to show again when popup closes
+                // (they'll only show if there's an active search)
+            });
             },
 
             createCustomIcon(price, ageClass, isCurrentlyHappyHour = false, showUnavailable = false) {
