@@ -2374,10 +2374,10 @@ const SearchManager = {
     isProcessing: false,
     lastRequestTime: 0,
     MIN_REQUEST_INTERVAL: 1100,
-    initialized: false, // Add flag to prevent duplicate initialization
+    initialized: false,
     
     init() {
-        if (this.initialized) return; // Prevent duplicate initialization
+        if (this.initialized) return;
         this.initialized = true;
         
         this.initMainSearch();
@@ -2396,7 +2396,9 @@ const SearchManager = {
         }
 
         // Clear any existing listeners
-        searchInput.removeEventListener("input", this.mainSearchHandler);
+        if (this.mainSearchHandler) {
+            searchInput.removeEventListener("input", this.mainSearchHandler);
+        }
         
         // Create bound handler function
         this.mainSearchHandler = Utils.debounce((e) => {
@@ -2405,9 +2407,12 @@ const SearchManager = {
         
         searchInput.addEventListener("input", this.mainSearchHandler);
 
-        // Improved click outside handler - be more specific about what should close results
+        // Improved click outside handler
+        if (this.mainClickOutsideHandler) {
+            document.removeEventListener("click", this.mainClickOutsideHandler);
+        }
+        
         this.mainClickOutsideHandler = (e) => {
-            // Don't close if clicking on search input, results, or map markers
             if (searchInput.contains(e.target) || 
                 resultsDiv.contains(e.target) ||
                 e.target.closest('.leaflet-marker-icon') ||
@@ -2418,11 +2423,9 @@ const SearchManager = {
             resultsDiv.classList.remove('show');
         };
         
-        // Remove existing listener if it exists
-        document.removeEventListener("click", this.mainClickOutsideHandler);
         document.addEventListener("click", this.mainClickOutsideHandler);
 
-        // Handle search input focus to show results if they exist
+        // Handle search input focus
         searchInput.addEventListener("focus", () => {
             if (resultsDiv.innerHTML.trim() && searchInput.value.trim().length >= 2) {
                 resultsDiv.classList.add('show');
@@ -2431,6 +2434,8 @@ const SearchManager = {
     },
 
     async handleMainSearch(query, resultsDiv) {
+        console.log("🔍 Searching for:", query);
+        
         if (query.length < 2) {
             resultsDiv.classList.remove('show');
             return;
@@ -2439,11 +2444,14 @@ const SearchManager = {
         try {
             // Search existing pubs first (instant)
             const existingResults = this.searchExistingPubs(query);
+            console.log("📍 Found existing pubs:", existingResults.length);
 
             // Search external locations (cached/queued)
             let geocodeResults = [];
             if (query.length >= 3) {
+                console.log("🌐 Starting external search...");
                 geocodeResults = await this.searchExternal(query);
+                console.log("🌐 External search results:", geocodeResults.length);
             }
 
             this.displayMainSearchResults(existingResults, geocodeResults, resultsDiv);
@@ -2453,57 +2461,147 @@ const SearchManager = {
         }
     },
 
-    // ========== ADD PUB MODAL SEARCH ==========
-    initAddPubSearch() {
-        const addressInput = document.getElementById("pub-address");
-        const addressResults = document.getElementById("address-results");
-
-        if (!addressInput || !addressResults) {
-            console.log("Add pub search elements not found (modal not loaded yet)");
-            return;
-        }
-
-        // Clear any existing listeners
-        addressInput.removeEventListener("input", this.addPubSearchHandler);
+    // ========== EXTERNAL SEARCH WITH BETTER LOGIC ==========
+    async performExternalSearch(query) {
+        console.log("🔗 Performing external search for:", query);
         
-        // Create bound handler function
-        this.addPubSearchHandler = Utils.debounce(async () => {
-            const query = addressInput.value.trim();
-            
-            if (query.length < 3) {
-                addressResults.style.display = "none";
-                return;
-            }
+        // Try multiple search strategies
+        const searchStrategies = [
+            // Strategy 1: Exact query + Melbourne context
+            `${query}, Melbourne, Victoria, Australia`,
+            // Strategy 2: Just the query + Victoria (less restrictive)
+            `${query}, Victoria, Australia`,
+            // Strategy 3: Query alone (most permissive)
+            query
+        ];
+
+        for (let i = 0; i < searchStrategies.length; i++) {
+            const searchQuery = searchStrategies[i];
+            console.log(`🔗 Trying strategy ${i + 1}:`, searchQuery);
             
             try {
-                // Show loading state
-                addressResults.innerHTML = '<div class="address-result-item search-status">Searching...</div>';
-                addressResults.style.display = "block";
-
-                // Use the same unified search
-                const results = await this.searchExternal(query);
-                this.displayAddPubSearchResults(results, addressResults, query);
+                const results = await this.performSingleSearch(searchQuery, i === 2); // Less restrictive for strategy 3
+                
+                if (results && results.length > 0) {
+                    console.log(`✅ Strategy ${i + 1} found ${results.length} results`);
+                    return results;
+                }
+                
+                console.log(`❌ Strategy ${i + 1} found no results`);
+                
+                // Small delay between strategies
+                if (i < searchStrategies.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
             } catch (error) {
-                console.error("Add pub search error:", error);
-                addressResults.innerHTML = '<div class="address-result-item">Search error</div>';
-                addressResults.style.display = "block";
+                console.error(`❌ Strategy ${i + 1} failed:`, error);
             }
-        }, 150);
+        }
         
-        addressInput.addEventListener("input", this.addPubSearchHandler);
+        console.log("🚫 All search strategies failed");
+        return [];
+    },
 
-        // Improved click outside handler for modal search
-        this.addPubClickOutsideHandler = (e) => {
-            if (!addressInput.contains(e.target) && 
-                !addressResults.contains(e.target) &&
-                !e.target.closest('.modal')) {
-                addressResults.style.display = "none";
-            }
-        };
+    async performSingleSearch(searchQuery, lessRestrictive = false) {
+        const encodedQuery = encodeURIComponent(searchQuery);
         
-        // Remove existing listener if it exists
-        document.removeEventListener('click', this.addPubClickOutsideHandler);
-        document.addEventListener('click', this.addPubClickOutsideHandler);
+        // Adjust bounds and restrictions based on strategy
+        let url;
+        if (lessRestrictive) {
+            // More permissive search for strategy 3
+            url = `https://nominatim.openstreetmap.org/search?` +
+                  `format=json&q=${encodedQuery}&limit=10&addressdetails=1&` +
+                  `countrycodes=au&accept-language=en`;
+        } else {
+            // More restrictive search for strategies 1 & 2
+            const victoriaBounds = "140.9,-39.2,150.0,-34.0";
+            url = `https://nominatim.openstreetmap.org/search?` +
+                  `format=json&q=${encodedQuery}&limit=8&addressdetails=1&` +
+                  `viewbox=${victoriaBounds}&bounded=0&` + // Changed bounded=0 for more results
+                  `countrycodes=au&accept-language=en`;
+        }
+
+        console.log("🌐 API URL:", url);
+
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'BeerSpy Melbourne App v0.2.20'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("📡 Raw API response:", data);
+        
+        const filtered = this.filterAndDeduplicateResults(data, lessRestrictive);
+        console.log("🔍 Filtered results:", filtered);
+        
+        return filtered;
+    },
+
+    filterAndDeduplicateResults(data, lessRestrictive = false) {
+        if (!data || !Array.isArray(data)) {
+            console.log("❌ No data or not array");
+            return [];
+        }
+        
+        console.log("🔍 Filtering", data.length, "raw results");
+        
+        const seen = new Set();
+        
+        const filtered = data.filter(place => {
+            const lat = parseFloat(place.lat);
+            const lon = parseFloat(place.lon);
+            
+            // Basic coordinate validation
+            if (isNaN(lat) || isNaN(lon)) {
+                console.log("❌ Invalid coordinates for:", place.display_name);
+                return false;
+            }
+            
+            // Victoria bounds check (more lenient if lessRestrictive)
+            if (lessRestrictive) {
+                // Broader bounds for Australia
+                if (lat < -43.6 || lat > -10.4 || lon < 113.3 || lon > 153.6) {
+                    console.log("❌ Outside Australia bounds:", place.display_name);
+                    return false;
+                }
+            } else {
+                // Victoria bounds
+                if (lat < -39.2 || lat > -34.0 || lon < 140.9 || lon > 150.0) {
+                    console.log("❌ Outside Victoria bounds:", place.display_name);
+                    return false;
+                }
+            }
+            
+            // Check not already in our database
+            const isDuplicate = appState.pubs.some(pub => 
+                Math.abs(pub.lat - lat) < 0.001 && 
+                Math.abs(pub.lon - lon) < 0.001
+            );
+            
+            if (isDuplicate) {
+                console.log("❌ Duplicate location:", place.display_name);
+                return false;
+            }
+            
+            // Deduplicate by coordinates
+            const coordKey = `${lat.toFixed(3)},${lon.toFixed(3)}`;
+            if (seen.has(coordKey)) {
+                console.log("❌ Coordinate duplicate:", place.display_name);
+                return false;
+            }
+            seen.add(coordKey);
+            
+            console.log("✅ Keeping result:", place.display_name);
+            return true;
+        });
+        
+        console.log("🔍 Filtered to", filtered.length, "results");
+        return filtered.slice(0, 6);
     },
 
     // ========== SHARED SEARCH LOGIC ==========
@@ -2511,6 +2609,7 @@ const SearchManager = {
         // Check cache first
         const cacheKey = this.normalizeCacheKey(query);
         if (this.cache.has(cacheKey)) {
+            console.log("💾 Using cached results for:", query);
             return this.cache.get(cacheKey);
         }
 
@@ -2558,63 +2657,6 @@ const SearchManager = {
 
         // Process next in queue after a small delay
         setTimeout(() => this.processQueue(), 100);
-    },
-
-    async performExternalSearch(query) {
-        // Build optimized single search URL
-        const searchQuery = encodeURIComponent(query + ", Victoria, Australia");
-        const victoriaBounds = "140.9,-39.2,150.0,-34.0";
-        
-        const url = `https://nominatim.openstreetmap.org/search?` +
-                   `format=json&q=${searchQuery}&limit=8&addressdetails=1&` +
-                   `viewbox=${victoriaBounds}&bounded=1&` +
-                   `countrycodes=au&accept-language=en`;
-
-        const response = await fetch(url, {
-            headers: {
-                'User-Agent': 'BeerSpy Melbourne App v0.2.19'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const data = await response.json();
-        return this.filterAndDeduplicateResults(data);
-    },
-
-    filterAndDeduplicateResults(data) {
-        if (!data || !Array.isArray(data)) return [];
-        
-        const seen = new Set();
-        
-        return data
-            .filter(place => {
-                const lat = parseFloat(place.lat);
-                const lon = parseFloat(place.lon);
-                
-                // Victoria bounds check (redundant but safe)
-                if (lat < -39.2 || lat > -34.0 || lon < 140.9 || lon > 150.0) {
-                    return false;
-                }
-                
-                // Check not already in our database
-                const isDuplicate = appState.pubs.some(pub => 
-                    Math.abs(pub.lat - lat) < 0.001 && 
-                    Math.abs(pub.lon - lon) < 0.001
-                );
-                
-                if (isDuplicate) return false;
-                
-                // Deduplicate by coordinates
-                const coordKey = `${lat.toFixed(3)},${lon.toFixed(3)}`;
-                if (seen.has(coordKey)) return false;
-                seen.add(coordKey);
-                
-                return true;
-            })
-            .slice(0, 6); // Allow more results for address search
     },
 
     // ========== EXISTING PUBS SEARCH ==========
@@ -2667,9 +2709,68 @@ const SearchManager = {
             resultsDiv.classList.add('show');
             this.attachMainSearchHandlers(resultsDiv);
         } else {
-            resultsDiv.innerHTML = '<div class="search-item">No results found</div>';
+            // Show debug info in no results case
+            const debugInfo = CONFIG.TEST_MODE ? '<br><small>Check browser console for search debug info</small>' : '';
+            resultsDiv.innerHTML = `<div class="search-item">No results found${debugInfo}</div>`;
             resultsDiv.classList.add('show');
         }
+    },
+
+    // ========== ADD PUB MODAL SEARCH ==========
+    initAddPubSearch() {
+        const addressInput = document.getElementById("pub-address");
+        const addressResults = document.getElementById("address-results");
+
+        if (!addressInput || !addressResults) {
+            console.log("Add pub search elements not found (modal not loaded yet)");
+            return;
+        }
+
+        // Clear any existing listeners
+        if (this.addPubSearchHandler) {
+            addressInput.removeEventListener("input", this.addPubSearchHandler);
+        }
+        
+        // Create bound handler function
+        this.addPubSearchHandler = Utils.debounce(async () => {
+            const query = addressInput.value.trim();
+            
+            if (query.length < 3) {
+                addressResults.style.display = "none";
+                return;
+            }
+            
+            try {
+                // Show loading state
+                addressResults.innerHTML = '<div class="address-result-item search-status">Searching...</div>';
+                addressResults.style.display = "block";
+
+                // Use the same unified search
+                const results = await this.searchExternal(query);
+                this.displayAddPubSearchResults(results, addressResults, query);
+            } catch (error) {
+                console.error("Add pub search error:", error);
+                addressResults.innerHTML = '<div class="address-result-item">Search error</div>';
+                addressResults.style.display = "block";
+            }
+        }, 150);
+        
+        addressInput.addEventListener("input", this.addPubSearchHandler);
+
+        // Improved click outside handler for modal search
+        if (this.addPubClickOutsideHandler) {
+            document.removeEventListener('click', this.addPubClickOutsideHandler);
+        }
+        
+        this.addPubClickOutsideHandler = (e) => {
+            if (!addressInput.contains(e.target) && 
+                !addressResults.contains(e.target) &&
+                !e.target.closest('.modal')) {
+                addressResults.style.display = "none";
+            }
+        };
+        
+        document.addEventListener('click', this.addPubClickOutsideHandler);
     },
 
     // ========== ADD PUB SEARCH RESULTS DISPLAY ==========
@@ -2853,7 +2954,6 @@ const SearchManager = {
         };
     }
 };
-
 function getSelectedDays(containerSelector) {
             const container = document.querySelector(containerSelector);
             const activeDayButtons = container.querySelectorAll('.day-btn.active');
