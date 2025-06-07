@@ -240,13 +240,13 @@
         }
         
         /* ======== Search Bar ======== */
-        .search-container {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            z-index: 1000;
-            width: 300px;
-        }
+.search-container {
+    position: fixed;  /* Change from absolute to fixed */
+    top: 98px;        /* Adjust for header height */
+    right: 38px;      /* Account for main container padding */
+    z-index: 1000;
+    width: 300px;
+}
 
         .search-bar {
             display: flex;
@@ -1109,14 +1109,15 @@
             <div id="map"></div>
             
             <!-- Search Bar -->
-                    <div class="search-container">
-                <div class="search-bar">
-                    <input type="text" id="pub-search" placeholder="Search places in Melbourne...">
-                    <button class="search-btn"><i class="fas fa-search"></i></button>
+
+        </div>
+                            <div class="search-container">
+                        <div class="search-bar">
+                         <input type="text" id="pub-search" placeholder="Search places in Melbourne...">
+                        <button class="search-btn"><i class="fas fa-search"></i></button>
                 </div>
                 <div class="search-results" id="search-results"></div>
-        </div>
-        </div>
+            </div>
 
         
         <!-- Map Controls Panel -->
