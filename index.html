@@ -1783,10 +1783,11 @@
                     }
                 });
                 // Hide search results when popup opens
-                document.getElementById('search-results').classList.remove('show');
     
 
                 appState.map.on("popupopen", (e) => {
+                                    document.getElementById('search-results').classList.remove('show');
+
                     setTimeout(() => {
                         const popupContainer = e.popup.getElement();
                         if (!popupContainer) return;
