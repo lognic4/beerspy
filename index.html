@@ -2366,26 +2366,35 @@
 // =====================================
 // OPTIMIZED SEARCH MANAGER
 // =====================================
+ // =====================================
+// UNIFIED SEARCH SYSTEM
+// =====================================
 const SearchManager = {
     cache: new Map(),
     requestQueue: [],
     isProcessing: false,
     lastRequestTime: 0,
-    MIN_REQUEST_INTERVAL: 1100, // 1.1 seconds to be safe with rate limits
+    MIN_REQUEST_INTERVAL: 1100, // 1.1 seconds to respect rate limits
     
     init() {
+        this.initMainSearch();
+        this.initAddPubSearch();
+        this.preloadCommonSearches();
+    },
+
+    // ========== MAIN SEARCH BAR ==========
+    initMainSearch() {
         const searchInput = document.getElementById("pub-search");
         const resultsDiv = document.getElementById("search-results");
 
         if (!searchInput || !resultsDiv) {
-            console.error("Search elements not found");
+            console.error("Main search elements not found");
             return;
         }
 
-        // Reduced debounce for better UX
         searchInput.addEventListener("input", Utils.debounce((e) => {
-            this.handleSearch(e.target.value.trim(), resultsDiv);
-        }, 150)); // Reduced from 300ms to 150ms
+            this.handleMainSearch(e.target.value.trim(), resultsDiv);
+        }, 150));
 
         // Hide results when clicking outside
         document.addEventListener("click", (e) => {
@@ -2393,56 +2402,91 @@ const SearchManager = {
                 resultsDiv.classList.remove('show');
             }
         });
-
-        // Preload commonly searched areas
-        this.preloadCommonSearches();
     },
 
-    async handleSearch(query, resultsDiv) {
+    async handleMainSearch(query, resultsDiv) {
         if (query.length < 2) {
             resultsDiv.classList.remove('show');
             return;
         }
 
         try {
-            // Search existing pubs first (this is instant)
+            // Search existing pubs first (instant)
             const existingResults = this.searchExistingPubs(query);
 
-            // Check cache first for external results
-            const cacheKey = query.toLowerCase().trim();
-            let geocodeResults = this.cache.get(cacheKey) || [];
-
-            // If not in cache and query is long enough, search externally
-            if (geocodeResults.length === 0 && query.length >= 3) {
-                // Add to queue instead of immediate request
-                geocodeResults = await this.queuedSearch(query);
+            // Search external locations (cached/queued)
+            let geocodeResults = [];
+            if (query.length >= 3) {
+                geocodeResults = await this.searchExternal(query);
             }
 
-            this.displaySearchResults(existingResults, geocodeResults, resultsDiv);
+            this.displayMainSearchResults(existingResults, geocodeResults, resultsDiv);
         } catch (error) {
-            console.error("Search error:", error);
-            this.displaySearchResults([], [], resultsDiv);
+            console.error("Main search error:", error);
+            this.displayMainSearchResults([], [], resultsDiv);
         }
     },
 
-    searchExistingPubs(query) {
-        const lowerQuery = query.toLowerCase();
-        return appState.pubs.filter(pub =>
-            pub.name.toLowerCase().includes(lowerQuery) ||
-            pub.address.toLowerCase().includes(lowerQuery)
-        ).slice(0, 3); // Limit to top 3 matches
+    // ========== ADD PUB MODAL SEARCH ==========
+    initAddPubSearch() {
+        const addressInput = document.getElementById("pub-address");
+        const addressResults = document.getElementById("address-results");
+
+        if (!addressInput || !addressResults) {
+            console.log("Add pub search elements not found (modal not loaded yet)");
+            return;
+        }
+
+        addressInput.addEventListener("input", Utils.debounce(async () => {
+            const query = addressInput.value.trim();
+            
+            if (query.length < 3) {
+                addressResults.style.display = "none";
+                return;
+            }
+            
+            try {
+                // Show loading state
+                addressResults.innerHTML = '<div class="address-result-item search-status">Searching...</div>';
+                addressResults.style.display = "block";
+
+                // Use the same unified search
+                const results = await this.searchExternal(query);
+                this.displayAddPubSearchResults(results, addressResults, query);
+            } catch (error) {
+                console.error("Add pub search error:", error);
+                addressResults.innerHTML = '<div class="address-result-item">Search error</div>';
+                addressResults.style.display = "block";
+            }
+        }, 150));
+
+        // Hide results when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!addressInput.contains(e.target) && !addressResults.contains(e.target)) {
+                addressResults.style.display = "none";
+            }
+        });
     },
 
-    async queuedSearch(query) {
+    // ========== SHARED SEARCH LOGIC ==========
+    async searchExternal(query) {
+        // Check cache first
+        const cacheKey = this.normalizeCacheKey(query);
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
+        }
+
+        // Queue the request to respect rate limits
         return new Promise((resolve) => {
-            // Add to queue
-            this.requestQueue.push({ query, resolve });
-            
-            // Start processing if not already processing
+            this.requestQueue.push({ query, resolve, cacheKey });
             if (!this.isProcessing) {
                 this.processQueue();
             }
         });
+    },
+
+    normalizeCacheKey(query) {
+        return query.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
     },
 
     async processQueue() {
@@ -2452,7 +2496,7 @@ const SearchManager = {
         }
 
         this.isProcessing = true;
-        const { query, resolve } = this.requestQueue.shift();
+        const { query, resolve, cacheKey } = this.requestQueue.shift();
 
         try {
             // Respect rate limiting
@@ -2464,31 +2508,33 @@ const SearchManager = {
             const results = await this.performExternalSearch(query);
             this.lastRequestTime = Date.now();
             
+            // Cache the results
+            this.cache.set(cacheKey, results);
+            this.cleanupCache();
+            
             resolve(results);
         } catch (error) {
             console.error("External search error:", error);
             resolve([]);
         }
 
-        // Process next in queue
+        // Process next in queue after a small delay
         setTimeout(() => this.processQueue(), 100);
     },
 
     async performExternalSearch(query) {
-        const cacheKey = query.toLowerCase().trim();
-        
-        // Build optimized search URL - single request with viewbox
+        // Build optimized single search URL
         const searchQuery = encodeURIComponent(query + ", Victoria, Australia");
-        const melbourneBounds = "140.9,-39.2,150.0,-34.0"; // Victoria bounds
+        const victoriaBounds = "140.9,-39.2,150.0,-34.0";
         
         const url = `https://nominatim.openstreetmap.org/search?` +
-                   `format=json&q=${searchQuery}&limit=5&addressdetails=1&` +
-                   `viewbox=${melbourneBounds}&bounded=1&` +
+                   `format=json&q=${searchQuery}&limit=8&addressdetails=1&` +
+                   `viewbox=${victoriaBounds}&bounded=1&` +
                    `countrycodes=au&accept-language=en`;
 
         const response = await fetch(url, {
             headers: {
-                'User-Agent': 'BeerSpy Melbourne App'
+                'User-Agent': 'BeerSpy Melbourne App v0.2.19'
             }
         });
         
@@ -2497,20 +2543,7 @@ const SearchManager = {
         }
         
         const data = await response.json();
-        
-        // Filter and deduplicate results
-        const filteredResults = this.filterAndDeduplicateResults(data);
-        
-        // Cache the results
-        this.cache.set(cacheKey, filteredResults);
-        
-        // Auto-cleanup cache if it gets too large
-        if (this.cache.size > 100) {
-            const firstKey = this.cache.keys().next().value;
-            this.cache.delete(firstKey);
-        }
-        
-        return filteredResults;
+        return this.filterAndDeduplicateResults(data);
     },
 
     filterAndDeduplicateResults(data) {
@@ -2523,7 +2556,7 @@ const SearchManager = {
                 const lat = parseFloat(place.lat);
                 const lon = parseFloat(place.lon);
                 
-                // Victoria bounds check
+                // Victoria bounds check (redundant but safe)
                 if (lat < -39.2 || lat > -34.0 || lon < 140.9 || lon > 150.0) {
                     return false;
                 }
@@ -2543,33 +2576,23 @@ const SearchManager = {
                 
                 return true;
             })
-            .slice(0, 3); // Limit results
+            .slice(0, 6); // Allow more results for address search
     },
 
-    preloadCommonSearches() {
-        // Preload common Melbourne searches to improve perceived performance
-        const commonSearches = [
-            "Melbourne CBD",
-            "South Yarra",
-            "Richmond",
-            "Fitzroy",
-            "Collingwood",
-            "St Kilda"
-        ];
-        
-        // Stagger preloading to respect rate limits
-        commonSearches.forEach((search, index) => {
-            setTimeout(() => {
-                if (this.cache.has(search.toLowerCase())) return;
-                this.queuedSearch(search);
-            }, (index + 1) * this.MIN_REQUEST_INTERVAL);
-        });
+    // ========== EXISTING PUBS SEARCH ==========
+    searchExistingPubs(query) {
+        const lowerQuery = query.toLowerCase();
+        return appState.pubs.filter(pub =>
+            pub.name.toLowerCase().includes(lowerQuery) ||
+            pub.address.toLowerCase().includes(lowerQuery)
+        ).slice(0, 3);
     },
 
-    displaySearchResults(existingResults, geocodeResults, resultsDiv) {
+    // ========== MAIN SEARCH RESULTS DISPLAY ==========
+    displayMainSearchResults(existingResults, geocodeResults, resultsDiv) {
         let resultsHTML = '';
         
-        // Show existing pubs first (with visual priority)
+        // Show existing pubs first
         if (existingResults.length > 0) {
             resultsHTML += existingResults.map(pub => `
                 <div class="search-item existing-pub-indicator" data-type="existing" data-lat="${pub.lat}" data-lon="${pub.lon}">
@@ -2582,7 +2605,7 @@ const SearchManager = {
         
         // Show new locations
         if (geocodeResults.length > 0) {
-            resultsHTML += geocodeResults.map(place => {
+            resultsHTML += geocodeResults.slice(0, 3).map(place => {
                 const pubName = this.extractPubName(place);
                 const placeType = this.getPlaceType(place);
                 
@@ -2604,16 +2627,78 @@ const SearchManager = {
         if (resultsHTML) {
             resultsDiv.innerHTML = resultsHTML;
             resultsDiv.classList.add('show');
-            this.attachSearchResultHandlers(resultsDiv);
+            this.attachMainSearchHandlers(resultsDiv);
         } else {
-            const hasExisting = existingResults.length > 0;
-            const message = hasExisting ? 'No new locations found' : 'No results found';
-            resultsDiv.innerHTML = `<div class="search-item">${message}</div>`;
+            resultsDiv.innerHTML = '<div class="search-item">No results found</div>';
             resultsDiv.classList.add('show');
         }
     },
 
-    attachSearchResultHandlers(resultsDiv) {
+    // ========== ADD PUB SEARCH RESULTS DISPLAY ==========
+    displayAddPubSearchResults(results, addressResults, originalQuery) {
+        if (!results || results.length === 0) {
+            addressResults.innerHTML = '<div class="address-result-item">No locations found in Victoria</div>';
+            addressResults.style.display = "block";
+            return;
+        }
+
+        const resultsHTML = results.map(place => {
+            const name = this.extractPubName(place);
+            return `
+                <div class="address-result-item" 
+                    data-lat="${place.lat}" 
+                    data-lon="${place.lon}" 
+                    data-name="${name}" 
+                    data-address="${place.display_name}">
+                    <div class="place-name">${name}</div>
+                    <div class="place-address">${place.display_name}</div>
+                </div>
+            `;
+        }).join('');
+        
+        addressResults.innerHTML = resultsHTML;
+        addressResults.style.display = "block";
+        
+        // Add click handlers for add pub modal
+        addressResults.querySelectorAll('.address-result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const lat = parseFloat(item.dataset.lat);
+                const lon = parseFloat(item.dataset.lon);
+                const name = item.dataset.name;
+                const address = item.dataset.address;
+                
+                // Check for duplicates
+                const duplicate = appState.pubs.find(pub => 
+                    Math.abs(pub.lat - lat) < 0.001 && 
+                    Math.abs(pub.lon - lon) < 0.001
+                );
+                
+                if (duplicate) {
+                    Utils.showError(`This location already exists as "${duplicate.name}"`);
+                    return;
+                }
+                
+                Utils.hideError();
+                
+                // Fill in the form
+                document.getElementById("pub-name").value = name;
+                document.getElementById("pub-address").value = address;
+                document.getElementById("pub-lat").value = lat;
+                document.getElementById("pub-lon").value = lon;
+                
+                // Update map view
+                if (appState.map) {
+                    appState.map.setView([lat, lon], 16);
+                }
+                
+                // Hide results
+                addressResults.style.display = "none";
+            });
+        });
+    },
+
+    // ========== EVENT HANDLERS ==========
+    attachMainSearchHandlers(resultsDiv) {
         resultsDiv.querySelectorAll('.search-item').forEach(item => {
             item.addEventListener('click', () => {
                 const lat = parseFloat(item.dataset.lat);
@@ -2647,6 +2732,8 @@ const SearchManager = {
                     const modal = document.getElementById("add-pub-modal");
                     if (modal) {
                         modal.style.display = "flex";
+                        // Re-initialize add pub search now that modal is visible
+                        setTimeout(() => this.initAddPubSearch(), 100);
                         appState.map.setView([lat, lon], 16);
                     }
                     
@@ -2657,6 +2744,7 @@ const SearchManager = {
         });
     },
 
+    // ========== UTILITY FUNCTIONS ==========
     extractPubName(placeData) {
         if (placeData.name) return placeData.name;
         
@@ -2687,13 +2775,47 @@ const SearchManager = {
         return 'Location';
     },
 
-    // Clear cache if needed
-    clearCache() {
-        this.cache.clear();
-        console.log("Search cache cleared");
+    preloadCommonSearches() {
+        const commonSearches = [
+            "Melbourne CBD",
+            "South Yarra", 
+            "Richmond",
+            "Fitzroy",
+            "Collingwood",
+            "St Kilda"
+        ];
+        
+        // Stagger preloading
+        commonSearches.forEach((search, index) => {
+            setTimeout(() => {
+                const cacheKey = this.normalizeCacheKey(search);
+                if (!this.cache.has(cacheKey)) {
+                    this.searchExternal(search);
+                }
+            }, (index + 1) * this.MIN_REQUEST_INTERVAL);
+        });
+    },
+
+    cleanupCache() {
+        if (this.cache.size > 100) {
+            const firstKey = this.cache.keys().next().value;
+            this.cache.delete(firstKey);
+        }
+    },
+
+    // Debug function
+    getCacheStats() {
+        return {
+            cacheSize: this.cache.size,
+            queueLength: this.requestQueue.length,
+            isProcessing: this.isProcessing,
+            lastRequestTime: new Date(this.lastRequestTime).toLocaleTimeString()
+        };
     }
-};
-        function getSelectedDays(containerSelector) {
+};   
+
+
+function getSelectedDays(containerSelector) {
             const container = document.querySelector(containerSelector);
             const activeDayButtons = container.querySelectorAll('.day-btn.active');
             return Array.from(activeDayButtons).map(btn => btn.dataset.day);
@@ -2785,7 +2907,6 @@ const SearchManager = {
                 }
 
                 // Setup address search
-                this.setupAddressSearch();
                 this.setupDayToggleButtons('#add-pub-modal');
 
             },
@@ -2802,111 +2923,7 @@ const SearchManager = {
                     });
                 });
             },
-
-            setupAddressSearch() {
-                const addressInput = document.getElementById("pub-address");
-                const addressResults = document.getElementById("address-results");
-
-                if (!addressInput || !addressResults) return;
-
-                addressInput.addEventListener("input", Utils.debounce(async () => {
-                    const query = addressInput.value.trim();
-                    
-                    if (query.length < 3) {
-                        addressResults.style.display = "none";
-                        return;
-                    }
-                    
-                    try {
-                        const searchQueries = [
-                            encodeURIComponent(query),
-                            encodeURIComponent(query + ", Victoria, Australia"),
-                            encodeURIComponent(query + ", Melbourne, Australia")
-                        ];
-
-                        let data = [];
-                        for (const searchQuery of searchQueries) {
-                            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${searchQuery}&limit=5&addressdetails=1&extratags=1`);
-                            const results = await response.json();
-                            
-                            if (results && results.length > 0) {
-                                // Filter to Victoria only
-                                data = results.filter(place => {
-                                    const lat = parseFloat(place.lat);
-                                    const lon = parseFloat(place.lon);
-                                    return lat >= -39.2 && lat <= -34.0 && lon >= 140.9 && lon <= 150.0;
-                                });
-                                
-                                if (data.length > 0) break;
-                            }
-                        }
-                        
-                        if (data && data.length > 0) {
-                            addressResults.innerHTML = data.map(place => `
-                                <div class="address-result-item" 
-                                    data-lat="${place.lat}" 
-                                    data-lon="${place.lon}" 
-                                    data-name="${place.name || place.display_name.split(',')[0]}" 
-                                    data-address="${place.display_name}">
-                                    <div class="place-name">${place.name || place.display_name.split(',')[0]}</div>
-                                    <div class="place-address">${place.display_name}</div>
-                                </div>
-                            `).join('');
-                            
-                            addressResults.style.display = "block";
-                            
-                            // Add click handlers
-                            addressResults.querySelectorAll('.address-result-item').forEach(item => {
-                                item.addEventListener('click', () => {
-                                    const lat = parseFloat(item.dataset.lat);
-                                    const lon = parseFloat(item.dataset.lon);
-                                    const name = item.dataset.name;
-                                    const address = item.dataset.address;
-                                    
-                                    // Check for duplicates
-                                    const duplicate = appState.pubs.find(pub => 
-                                        Math.abs(pub.lat - lat) < 0.001 && 
-                                        Math.abs(pub.lon - lon) < 0.001
-                                    );
-                                    
-                                    if (duplicate) {
-                                        Utils.showError(`This location already exists as "${duplicate.name}"`);
-                                        return;
-                                    }
-                                    
-                                    Utils.hideError();
-                                    
-                                    // Fill in the form
-                                    document.getElementById("pub-name").value = name;
-                                    addressInput.value = address;
-                                    document.getElementById("pub-lat").value = lat;
-                                    document.getElementById("pub-lon").value = lon;
-                                    
-                                    // Update map view
-                                    appState.map.setView([lat, lon], 16);
-                                    
-                                    // Hide results
-                                    addressResults.style.display = "none";
-                                });
-                            });
-                        } else {
-                            addressResults.innerHTML = '<div class="address-result-item">No locations found</div>';
-                            addressResults.style.display = "block";
-                        }
-                    } catch (error) {
-                        console.error("Address search error:", error);
-                        addressResults.style.display = "none";
-                    }
-                }, CONFIG.SEARCH_DELAY));
-
-                // Hide results when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!addressInput.contains(e.target) && !addressResults.contains(e.target)) {
-                        addressResults.style.display = "none";
-                    }
-                });
-            },
-            async handleAddPubSubmit() {
+             async handleAddPubSubmit() {
                 const elements = {
                     name: document.getElementById("pub-name"),
                     address: document.getElementById("pub-address"),
