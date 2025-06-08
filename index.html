@@ -1850,7 +1850,10 @@
 
     appState.map.on("popupopen", (e) => {
         // DON'T hide search container - just let search results hide naturally via click handlers
-        
+            const resultsDiv = document.getElementById("search-results");
+    if (resultsDiv) {
+        resultsDiv.classList.remove('show');
+    }
         setTimeout(() => {
             const popupContainer = e.popup.getElement();
             if (!popupContainer) return;
