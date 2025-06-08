@@ -1853,6 +1853,7 @@
             const resultsDiv = document.getElementById("search-results");
     if (resultsDiv) {
         resultsDiv.classList.remove('show');
+                resultsDiv.style.display = 'none';  // ✅ Add this line
     }
         setTimeout(() => {
             const popupContainer = e.popup.getElement();
