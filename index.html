@@ -1880,6 +1880,7 @@
 
     appState.map.on("popupclose", (e) => {
         // DON'T restore search container visibility - let the search system handle its own state
+        
     });
 },
             createCustomIcon(price, ageClass, isCurrentlyHappyHour = false, showUnavailable = false) {
@@ -1990,6 +1991,10 @@
                     if (resultsDiv) {
                         resultsDiv.classList.remove('show');
                     }
+                        const searchContainer = document.querySelector(".search-container");
+    if (searchContainer) {
+        searchContainer.style.display = 'none';
+    }
                 const pub = e.target.pubData;
                 const beersForSize = pub.beers.filter((beer) => beer.size === appState.currentSize);
 
