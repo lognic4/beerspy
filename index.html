@@ -1986,10 +1986,15 @@
             },
 
             onMarkerClick(e) {
+                             const resultsDiv = document.getElementById("search-results");
+                    if (resultsDiv) {
+                        resultsDiv.classList.remove('show');
+                    }
                 const pub = e.target.pubData;
                 const beersForSize = pub.beers.filter((beer) => beer.size === appState.currentSize);
 
                 appState.map.closePopup();
+   
 
                 setTimeout(() => {
                     const popup = L.popup()
