@@ -1880,6 +1880,10 @@
 
     appState.map.on("popupclose", (e) => {
         // DON'T restore search container visibility - let the search system handle its own state
+            const searchContainer = document.querySelector(".search-container");
+    if (searchContainer) {
+        searchContainer.style.display = '';
+    }
         
     });
 },
